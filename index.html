@@ -25,482 +25,491 @@
 </head>
 <body class="bg-gray-100">
 
-    <!-- NOVO: Sidebar Vertical -->
-    <nav id="sidebar" class="fixed top-0 left-0 h-screen bg-gray-800 text-gray-300 z-40 transition-all duration-300 ease-in-out overflow-y-auto">
-        <!-- Logo e Toggle -->
-        <div class="flex items-center justify-between h-16 px-4">
-            <div class="flex-shrink-0 flex items-center logo-container">
-                <svg class="h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m-9-5.747h18"/>
-                </svg>
-                <span class="text-xl font-bold text-gray-100 ml-2 sidebar-text">VadeMecum</span>
+    <!-- Menu Superior Fixo (Header) -->
+    <header class="bg-gray-800 shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <svg class="h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m-9-5.747h18"/>
+                        </svg>
+                        <span class="text-xl font-bold text-gray-100 ml-2">VadeMecum</span>
+                    </div>
+                    <nav id="main-nav" class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <!-- ATUALIZADO: Adicionado ícone e classes flex -->
+                            <a href="#" data-view="inicio-view" class="nav-link active-nav text-gray-300 hover:text-white px-3 rounded-lg text-sm font-medium flex items-center">
+                                <i class="fas fa-home mr-2"></i>Início
+                            </a>
+                            <a href="#" data-view="vade-mecum-view" class="nav-link text-gray-300 hover:text-white px-3 rounded-lg text-sm font-medium flex items-center">
+                                <i class="far fa-check-square mr-2"></i>Questões
+                            </a>
+                            <a href="#" data-view="cadernos-view" class="nav-link text-gray-300 hover:text-white px-3 rounded-lg text-sm font-medium flex items-center">
+                                <i class="fas fa-book mr-2"></i>Cadernos
+                            </a>
+                            <!-- ÍCONE DE MATÉRIAS ATUALIZADO -->
+                            <a href="#" data-view="materias-view" class="nav-link text-gray-300 hover:text-white px-3 rounded-lg text-sm font-medium flex items-center">
+                                <i class="fas fa-fw fa-layer-group mr-2"></i>Matérias
+                            </a>
+                            <!-- ===== INÍCIO DA MODIFICAÇÃO: Ícone da Revisão alterado ===== -->
+                            <a href="#" data-view="revisao-view" class="nav-link text-gray-300 hover:text-white px-3 rounded-lg text-sm font-medium flex items-center">
+                                <i class="fas fa-fw fa-sync-alt mr-2"></i>Revisão
+                            </a>
+                            <!-- ===== FIM DA MODIFICAÇÃO ===== -->
+                            <a href="#" data-view="estatisticas-view" class="nav-link text-gray-300 hover:text-white px-3 rounded-lg text-sm font-medium flex items-center">
+                                <i class="fas fa-chart-bar mr-2"></i>Estatísticas
+                            </a>
+                        </div>
+                    </nav>
+                </div>
+                <div class="hidden md:block">
+                    <div id="user-account-container" class="ml-4 flex items-center md:ml-6">
+                        <!-- Será preenchido pelo JavaScript -->
+                    </div>
+                </div>
+                <div class="-mr-2 flex md:hidden">
+                    <button id="hamburger-btn" type="button" class="bg-gray-800 inline-flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Abrir menu principal</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
             </div>
-             <!-- Botão de Toggle da Sidebar (visível apenas em telas grandes) -->
-            <button id="sidebar-toggle-btn" class="hidden lg:block p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700">
-                <i class="fas fa-bars"></i>
-            </button>
+        </div>
+        <!-- Menu Mobile -->
+        <div id="mobile-menu" class="md:hidden hidden bg-gray-800 border-t border-gray-700">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <!-- ATUALIZADO: Adicionado ícone e classes flex -->
+                <a href="#" data-view="inicio-view" class="nav-link active-nav text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-lg text-base font-medium flex items-center">
+                    <i class="fas fa-home mr-3"></i>Início
+                </a>
+                <a href="#" data-view="vade-mecum-view" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-lg text-base font-medium flex items-center">
+                    <i class="far fa-check-square mr-3"></i>Questões
+                </a>
+                <a href="#" data-view="cadernos-view" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-lg text-base font-medium flex items-center">
+                    <i class="fas fa-book mr-3"></i>Cadernos
+                </a>
+                <!-- ÍCONE DE MATÉRIAS ATUALIZADO (MOBILE) -->
+                <a href="#" data-view="materias-view" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-lg text-base font-medium flex items-center">
+                    <i class="fas fa-fw fa-layer-group mr-3"></i>Matérias
+                </a>
+                <!-- ===== INÍCIO DA MODIFICAÇÃO: Ícone da Revisão alterado ===== -->
+                <a href="#" data-view="revisao-view" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-lg text-base font-medium flex items-center">
+                    <i class="fas fa-fw fa-sync-alt mr-3"></i>Revisão
+                </a>
+                <!-- ===== FIM DA MODIFICAÇÃO ===== -->
+                <a href="#" data-view="estatisticas-view" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-lg text-base font-medium flex items-center">
+                    <i class="fas fa-chart-bar mr-3"></i>Estatísticas
+                </a>
+                 <div id="user-account-container-mobile" class="border-t border-gray-700 mt-2 pt-2">
+                    <!-- Será preenchido pelo JavaScript -->
+                 </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="py-6 lg:py-10">
+        <div id="inicio-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Cards de Desempenho Geral -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gray-50 p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-sm font-medium text-gray-500">Questões Resolvidas</h3>
+                    <p id="stats-total-questions" class="mt-1 text-3xl font-semibold text-gray-900">0</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-sm font-medium text-gray-500">Acertos</h3>
+                    <p id="stats-total-correct" class="mt-1 text-3xl font-semibold" style="color: #00B050;">0</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-sm font-medium text-gray-500">Erros</h3>
+                    <p id="stats-total-incorrect" class="mt-1 text-3xl font-semibold" style="color: #FF0000;">0</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-sm font-medium text-gray-500">Desempenho</h3>
+                    <p id="stats-geral-accuracy" class="mt-1 text-3xl font-semibold" style="color: #0070C0;">0%</p>
+                </div>
+            </div>
+            <!-- Gráfico de Desempenho por Disciplina (Semanal) -->
+            <div class="bg-gray-50 p-6 rounded-xl shadow-md mb-8">
+                <div style="height: 400px;">
+                     <canvas id="weeklyPerformanceChart"></canvas>
+                </div>
+            </div>
+            <div class="bg-gray-50 p-6 rounded-xl shadow-md">
+                <div style="height: 400px;">
+                     <canvas id="homePerformanceChart"></canvas>
+                </div>
+            </div>
         </div>
 
-        <!-- Links de Navegação -->
-        <div id="main-nav" class="mt-5 space-y-2 px-2">
-            <!-- ATUALIZADO: Estilo de link para sidebar vertical -->
-            <a href="#" data-view="inicio-view" class="nav-link active-nav flex items-center px-3 py-3 rounded-lg text-sm font-medium">
-                <i class="fas fa-home fa-fw w-6 text-center text-lg"></i>
-                <span class="ml-3 sidebar-text">Início</span>
-            </a>
-            <a href="#" data-view="vade-mecum-view" class="nav-link flex items-center px-3 py-3 rounded-lg text-sm font-medium">
-                <i class="far fa-check-square fa-fw w-6 text-center text-lg"></i>
-                <span class="ml-3 sidebar-text">Questões</span>
-            </a>
-            <a href="#" data-view="cadernos-view" class="nav-link flex items-center px-3 py-3 rounded-lg text-sm font-medium">
-                <i class="fas fa-book fa-fw w-6 text-center text-lg"></i>
-                <span class="ml-3 sidebar-text">Cadernos</span>
-            </a>
-            <a href="#" data-view="materias-view" class="nav-link flex items-center px-3 py-3 rounded-lg text-sm font-medium">
-                <i class="fas fa-layer-group fa-fw w-6 text-center text-lg"></i>
-                <span class="ml-3 sidebar-text">Matérias</span>
-            </a>
-            <a href="#" data-view="revisao-view" class="nav-link flex items-center px-3 py-3 rounded-lg text-sm font-medium">
-                <i class="fas fa-sync-alt fa-fw w-6 text-center text-lg"></i>
-                <span class="ml-3 sidebar-text">Revisão</span>
-            </a>
-            <a href="#" data-view="estatisticas-view" class="nav-link flex items-center px-3 py-3 rounded-lg text-sm font-medium">
-                <i class="fas fa-chart-bar fa-fw w-6 text-center text-lg"></i>
-                <span class="ml-3 sidebar-text">Estatísticas</span>
-            </a>
+        <div id="vade-mecum-view" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Banner de Adição de Questões -->
+            <div id="add-questions-banner" class="hidden bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-lg shadow-md" role="alert">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-bold">Modo de Adição de Questões</p>
+                        <p id="add-questions-banner-text">Selecione e filtre as questões que deseja adicionar.</p>
+                    </div>
+                    <button id="cancel-add-questions-btn" class="text-blue-500 hover:text-blue-700 font-bold">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                 <h2 id="vade-mecum-title" class="text-2xl font-bold text-gray-800">Vade Mecum de Questões</h2>
+                 <button id="toggle-filters-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600 bg-gray-50 border border-gray-300 px-4 py-2 rounded-lg shadow-md">
+                    <i class="fas fa-eye-slash mr-2"></i>
+                    Ocultar Filtros
+                 </button>
+            </div>
+            <!-- Seção de Filtros Reestruturada -->
+            <div id="filter-card" class="bg-gray-50 p-6 rounded-xl shadow-md mb-8">
+                <div class="flex justify-end mb-4">
+                    <button id="saved-filters-list-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600 bg-gray-100 border border-gray-300 px-4 py-2 rounded-lg shadow-md">
+                        <i class="fas fa-bookmark mr-2"></i>
+                        Filtros Salvos
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <!-- Linha 1: Dropdowns -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </span>
+                            <input type="text" id="search-input" placeholder="Pesquisar" class="w-full p-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <!-- Custom Select: Disciplina -->
+                        <div id="materia-filter" class="relative custom-select-container">
+                             <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center">
+                                 <span class="custom-select-value">Disciplina</span>
+                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                             </button>
+                             <div class="custom-select-panel hidden absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                                <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
+                                <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
+                                    <!-- Opções serão inseridas pelo JS -->
+                                </div>
+                             </div>
+                        </div>
+
+                        <!-- Custom Select: Assunto -->
+                        <div id="assunto-filter" class="relative custom-select-container">
+                             <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                 <span class="custom-select-value">Assunto</span>
+                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                             </button>
+                             <div class="custom-select-panel hidden absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                                <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
+                                <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
+                                   <!-- Opções serão inseridas pelo JS -->
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Linha 2: Tipo de questão -->
+                    <div class="pt-4 border-t mt-4">
+                         <div class="flex items-center flex-wrap gap-x-4 gap-y-2">
+                            <span class="text-sm font-medium text-gray-700">Tipo de questão:</span>
+                            <div id="tipo-filter-group" class="flex flex-wrap gap-2 filter-btn-group">
+                                <button data-value="todos" class="filter-btn-toggle active-filter px-3 py-1 text-sm border rounded-lg">Todos</button>
+                                <button data-value="C/E" class="filter-btn-toggle px-3 py-1 text-sm border rounded-lg">Certo e errado</button>
+                                <button data-value="Multipla Escolha" class="filter-btn-toggle px-3 py-1 text-sm border rounded-lg">Múltipla escolha</button>
+                            </div>
+                         </div>
+                    </div>
+                    
+                    <!-- Ações do Filtro -->
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200 mt-4">
+                         <div id="selected-filters-container" class="flex flex-wrap gap-2 items-center text-sm text-gray-700 flex-1">
+                             <!-- Tags de filtro aparecerão aqui -->
+                         </div>
+                         <div class="flex flex-wrap items-center justify-center md:justify-end gap-4 mt-4 md:mt-0">
+                             <button id="clear-filters-btn" class="text-sm text-gray-600 hover:text-blue-600">Limpar filtro</button>
+                             <button id="save-filter-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
+                                <i class="fas fa-save mr-1 font-normal"></i>
+                                Salvar filtro
+                             </button>
+                             <button id="create-caderno-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
+                                <i class="fas fa-book mr-1 font-normal"></i>
+                                Criar Caderno
+                             </button>
+                             <button id="filter-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300">Filtrar questões</button>
+                         </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content Area for Vade Mecum -->
+            <div id="vade-mecum-content-area">
+                <!-- MODIFICAÇÃO: Abas 'Questões' e 'Estatísticas' removidas -->
+                <div id="tabs-and-main-content">
+                    
+                    <!-- MODIFICAÇÃO: Bloco <nav id="tabs-container">...</div> removido -->
+
+                    <!-- MODIFICAÇÃO: Ajustadas classes do container principal. Removido 'rounded-b-xl rounded-tr-xl -mt-4', adicionado 'rounded-xl' -->
+                    <div id="main-content-container" class="bg-gray-50 rounded-xl shadow-md">
+                        <div class="p-4 border-b border-gray-200">
+                            <h3 id="question-counter-top" class="flex items-baseline text-xl text-gray-800 hidden"></h3>
+                        </div>
+                        <div class="flex flex-wrap justify-between items-center gap-y-2 gap-x-4 p-4 border-b border-gray-200 text-sm">
+                            <div id="question-info-container" class="text-gray-600 space-y-1 hidden"></div>
+                            <div id="question-toolbar" class="flex items-center flex-wrap gap-x-4 gap-y-2 text-gray-600 hidden">
+                                 <!-- Toolbar será inserida aqui -->
+                            </div>
+                        </div>
+                         <div class="p-6">
+                            <div id="question-view">
+                                <div id="questions-container" class="space-y-6">
+                                    <!-- As questões serão inseridas aqui pelo JavaScript -->
+                                </div>
+                                <div id="navigation-controls" class="flex justify-start items-center mt-8 space-x-4 hidden">
+                                    <!-- BOTÃO ANTERIOR MODIFICADO - Removido rounded-lg e hover:bg-gray-100 -->
+                                    <button id="prev-question-btn" class="w-12 h-12 flex items-center justify-center border bg-white transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <!-- Substituído o SVG inline pela imagem -->
+                                        <img src="img/anterior-ativo.svg" alt="Questão Anterior" class="w-9 h-9">
+                                    </button>
+                                    <!-- BOTÃO PRÓXIMA MODIFICADO - Removido rounded-lg e hover:bg-gray-100 -->
+                                    <button id="next-question-btn" class="w-12 h-12 flex items-center justify-center border bg-white transition">
+                                         <!-- Substituído o SVG inline pela imagem -->
+                                         <img src="img/proxima-ativo.svg" alt="Próxima Questão" class="w-9 h-9">
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- MODIFICAÇÃO: Bloco <div id="stats-view">...</div> removido -->
+                         </div>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <!-- Área do Usuário na Sidebar (para mobile) -->
-         <div id="user-account-container-mobile" class="absolute bottom-0 left-0 w-full border-t border-gray-700 p-2">
-            <!-- Será preenchido pelo JavaScript -->
-         </div>
-    </nav>
-    <!-- FIM: Sidebar Vertical -->
-
-
-    <!-- NOVO: Contêiner do Conteúdo Principal -->
-    <div id="page-content" class="relative transition-all duration-300 ease-in-out">
         
-        <!-- NOVO: Header do Conteúdo (para toggle mobile e conta de usuário desktop) -->
-        <header class="bg-white shadow-md sticky top-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
-            <!-- Botão de Toggle Mobile (visível apenas em telas pequenas) -->
-            <button id="mobile-toggle-btn" class="lg:hidden p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100">
-                <i class="fas fa-bars text-xl"></i>
-            </button>
-            
-            <!-- Espaçador (para empurrar a conta do usuário para a direita) -->
-            <div class="flex-grow"></div>
-
-            <!-- Área do Usuário Desktop (visível apenas em telas grandes) -->
-            <div id="user-account-container" class="hidden lg:block">
-                <!-- Será preenchido pelo JavaScript -->
-            </div>
-        </header>
-
-        <!-- Conteúdo Principal (o <main> antigo) -->
-        <main class="py-6 lg:py-10">
-            <!-- Todas as views (inicio-view, vade-mecum-view, etc.) vêm aqui dentro -->
-            <div id="inicio-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- Cards de Desempenho Geral -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-gray-50 p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-sm font-medium text-gray-500">Questões Resolvidas</h3>
-                        <p id="stats-total-questions" class="mt-1 text-3xl font-semibold text-gray-900">0</p>
-                    </div>
-                    <div class="bg-gray-50 p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-sm font-medium text-gray-500">Acertos</h3>
-                        <p id="stats-total-correct" class="mt-1 text-3xl font-semibold" style="color: #00B050;">0</p>
-                    </div>
-                    <div class="bg-gray-50 p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-sm font-medium text-gray-500">Erros</h3>
-                        <p id="stats-total-incorrect" class="mt-1 text-3xl font-semibold" style="color: #FF0000;">0</p>
-                    </div>
-                    <div class="bg-gray-50 p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-sm font-medium text-gray-500">Desempenho</h3>
-                        <p id="stats-geral-accuracy" class="mt-1 text-3xl font-semibold" style="color: #0070C0;">0%</p>
-                    </div>
-                </div>
-                <!-- Gráfico de Desempenho por Disciplina (Semanal) -->
-                <div class="bg-gray-50 p-6 rounded-xl shadow-md mb-8">
-                    <div style="height: 400px;">
-                         <canvas id="weeklyPerformanceChart"></canvas>
-                    </div>
-                </div>
-                <div class="bg-gray-50 p-6 rounded-xl shadow-md">
-                    <div style="height: 400px;">
-                         <canvas id="homePerformanceChart"></canvas>
-                    </div>
-                </div>
-            </div>
-    
-            <div id="vade-mecum-view" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- Banner de Adição de Questões -->
-                <div id="add-questions-banner" class="hidden bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-lg shadow-md" role="alert">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="font-bold">Modo de Adição de Questões</p>
-                            <p id="add-questions-banner-text">Selecione e filtre as questões que deseja adicionar.</p>
-                        </div>
-                        <button id="cancel-add-questions-btn" class="text-blue-500 hover:text-blue-700 font-bold">Cancelar</button>
-                    </div>
-                </div>
-    
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                     <h2 id="vade-mecum-title" class="text-2xl font-bold text-gray-800">Vade Mecum de Questões</h2>
-                     <button id="toggle-filters-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600 bg-gray-50 border border-gray-300 px-4 py-2 rounded-lg shadow-md">
-                        <i class="fas fa-eye-slash mr-2"></i>
-                        Ocultar Filtros
-                     </button>
-                </div>
-                <!-- Seção de Filtros Reestruturada -->
-                <div id="filter-card" class="bg-gray-50 p-6 rounded-xl shadow-md mb-8">
-                    <div class="flex justify-end mb-4">
-                        <button id="saved-filters-list-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600 bg-gray-100 border border-gray-300 px-4 py-2 rounded-lg shadow-md">
-                            <i class="fas fa-bookmark mr-2"></i>
-                            Filtros Salvos
-                        </button>
-                    </div>
-                    <div class="space-y-4">
-                        <!-- Linha 1: Dropdowns -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                </span>
-                                <input type="text" id="search-input" placeholder="Pesquisar" class="w-full p-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            
-                            <!-- Custom Select: Disciplina -->
-                            <div id="materia-filter" class="relative custom-select-container">
-                                 <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center">
-                                     <span class="custom-select-value">Disciplina</span>
-                                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                 </button>
-                                 <div class="custom-select-panel hidden absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-                                    <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
-                                    <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
-                                        <!-- Opções serão inseridas pelo JS -->
-                                    </div>
-                                 </div>
-                            </div>
-    
-                            <!-- Custom Select: Assunto -->
-                            <div id="assunto-filter" class="relative custom-select-container">
-                                 <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                     <span class="custom-select-value">Assunto</span>
-                                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                 </button>
-                                 <div class="custom-select-panel hidden absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-                                    <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
-                                    <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
-                                       <!-- Opções serão inseridas pelo JS -->
-                                    </div>
-                                 </div>
-                            </div>
-                        </div>
-    
-                        <!-- Linha 2: Tipo de questão -->
-                        <div class="pt-4 border-t mt-4">
-                             <div class="flex items-center flex-wrap gap-x-4 gap-y-2">
-                                <span class="text-sm font-medium text-gray-700">Tipo de questão:</span>
-                                <div id="tipo-filter-group" class="flex flex-wrap gap-2 filter-btn-group">
-                                    <button data-value="todos" class="filter-btn-toggle active-filter px-3 py-1 text-sm border rounded-lg">Todos</button>
-                                    <button data-value="C/E" class="filter-btn-toggle px-3 py-1 text-sm border rounded-lg">Certo e errado</button>
-                                    <button data-value="Multipla Escolha" class="filter-btn-toggle px-3 py-1 text-sm border rounded-lg">Múltipla escolha</button>
-                                </div>
-                             </div>
-                        </div>
-                        
-                        <!-- Ações do Filtro -->
-                        <div class="flex flex-col md:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200 mt-4">
-                             <div id="selected-filters-container" class="flex flex-wrap gap-2 items-center text-sm text-gray-700 flex-1">
-                                 <!-- Tags de filtro aparecerão aqui -->
-                             </div>
-                             <div class="flex flex-wrap items-center justify-center md:justify-end gap-4 mt-4 md:mt-0">
-                                 <button id="clear-filters-btn" class="text-sm text-gray-600 hover:text-blue-600">Limpar filtro</button>
-                                 <button id="save-filter-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
-                                    <i class="fas fa-save mr-1 font-normal"></i>
-                                    Salvar filtro
-                                 </button>
-                                 <button id="create-caderno-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
-                                    <i class="fas fa-book mr-1 font-normal"></i>
-                                    Criar Caderno
-                                 </button>
-                                 <button id="filter-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300">Filtrar questões</button>
-                             </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Main Content Area for Vade Mecum -->
-                <div id="vade-mecum-content-area">
-                    <!-- MODIFICAÇÃO: Abas 'Questões' e 'Estatísticas' removidas -->
-                    <div id="tabs-and-main-content">
-                        
-                        <!-- MODIFICAÇÃO: Bloco <nav id="tabs-container">...</div> removido -->
-    
-                        <!-- MODIFICAÇÃO: Ajustadas classes do container principal. Removido 'rounded-b-xl rounded-tr-xl -mt-4', adicionado 'rounded-xl' -->
-                        <div id="main-content-container" class="bg-gray-50 rounded-xl shadow-md">
-                            <div class="p-4 border-b border-gray-200">
-                                <h3 id="question-counter-top" class="flex items-baseline text-xl text-gray-800 hidden"></h3>
-                            </div>
-                            <div class="flex flex-wrap justify-between items-center gap-y-2 gap-x-4 p-4 border-b border-gray-200 text-sm">
-                                <div id="question-info-container" class="text-gray-600 space-y-1 hidden"></div>
-                                <div id="question-toolbar" class="flex items-center flex-wrap gap-x-4 gap-y-2 text-gray-600 hidden">
-                                     <!-- Toolbar será inserida aqui -->
-                                </div>
-                            </div>
-                             <div class="p-6">
-                                <div id="question-view">
-                                    <div id="questions-container" class="space-y-6">
-                                        <!-- As questões serão inseridas aqui pelo JavaScript -->
-                                    </div>
-                                    <div id="navigation-controls" class="flex justify-start items-center mt-8 space-x-4 hidden">
-                                        <!-- BOTÃO ANTERIOR MODIFICADO - Removido rounded-lg e hover:bg-gray-100 -->
-                                        <button id="prev-question-btn" class="w-12 h-12 flex items-center justify-center border bg-white transition disabled:opacity-50 disabled:cursor-not-allowed">
-                                            <!-- Substituído o SVG inline pela imagem -->
-                                            <img src="img/anterior-ativo.svg" alt="Questão Anterior" class="w-9 h-9">
-                                        </button>
-                                        <!-- BOTÃO PRÓXIMA MODIFICADO - Removido rounded-lg e hover:bg-gray-100 -->
-                                        <button id="next-question-btn" class="w-12 h-12 flex items-center justify-center border bg-white transition">
-                                             <!-- Substituído o SVG inline pela imagem -->
-                                             <img src="img/proxima-ativo.svg" alt="Próxima Questão" class="w-9 h-9">
-                                        </button>
-                                    </div>
-                                </div>
-                                <!-- MODIFICAÇÃO: Bloco <div id="stats-view">...</div> removido -->
-                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="cadernos-view" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                     <h2 id="cadernos-view-title" class="text-2xl font-bold text-gray-800">Meus Cadernos</h2>
-                     <div id="cadernos-view-actions" class="flex flex-wrap items-center gap-2">
-                        <button id="back-to-folders-btn" class="hidden bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 flex items-center">
-                            <i class="fas fa-arrow-left mr-2"></i>
-                            Voltar
-                        </button>
-                        <button id="add-questions-to-caderno-btn" class="hidden bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-300 flex items-center">
-                             <i class="fas fa-plus mr-2"></i>
-                             Adicionar Questões
-                        </button>
-                        <button id="create-folder-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300 flex items-center">
-                            <i class="fas fa-folder-plus mr-2"></i>
-                            Criar Pasta
-                        </button>
-                        <button id="add-caderno-to-folder-btn" class="hidden bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-300 flex items-center">
-                             <i class="fas fa-plus mr-2"></i>
-                             Adicionar Caderno
-                        </button>
-                     </div>
-                </div>
-                <div id="saved-cadernos-list-container">
-                    <!-- Pastas e cadernos serão inseridos aqui -->
-                </div>
-            </div>
-    
-            <div id="materias-view" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                     <h2 id="materias-view-title" class="text-2xl font-bold text-gray-800">Matérias</h2>
-                     <button id="back-to-materias-btn" class="hidden bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 flex items-center">
+        <div id="cadernos-view" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                 <h2 id="cadernos-view-title" class="text-2xl font-bold text-gray-800">Meus Cadernos</h2>
+                 <div id="cadernos-view-actions" class="flex flex-wrap items-center gap-2">
+                    <button id="back-to-folders-btn" class="hidden bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 flex items-center">
                         <i class="fas fa-arrow-left mr-2"></i>
                         Voltar
                     </button>
-                </div>
-                <div id="materias-list-container" class="space-y-2">
-                    <!-- Matérias will be inserted here -->
-                </div>
-                <div id="assuntos-list-container" class="hidden">
-                     <!-- Assuntos will be inserted here -->
-                </div>
-            </div>
-    
-            <div id="revisao-view" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                     <h2 class="text-2xl font-bold text-gray-800">Minhas Revisões</h2>
-                     <button id="start-selected-review-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center" disabled>
-                        <i class="fas fa-play mr-2"></i>
-                        Iniciar Revisão
+                    <button id="add-questions-to-caderno-btn" class="hidden bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-300 flex items-center">
+                         <i class="fas fa-plus mr-2"></i>
+                         Adicionar Questões
                     </button>
-                </div>
-                <div id="review-table-container" class="bg-gray-50 rounded-xl shadow-md overflow-x-auto">
-                    <!-- Tabela de revisão será inserida aqui -->
-                </div>
-            </div>
-    
-            <div id="estatisticas-view" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                     <h2 class="text-2xl font-bold text-gray-800">Minhas Estatísticas</h2>
-                     <button id="reset-all-progress-btn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors duration-300 flex items-center text-sm">
-                        <i class="fas fa-trash-alt mr-2"></i>
-                        Resetar Progresso
+                    <button id="create-folder-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-folder-plus mr-2"></i>
+                        Criar Pasta
                     </button>
-                </div>
-    
-                <!-- ===== INÍCIO DA MODIFICAÇÃO: Filtro da aba Estatísticas redesenhado ===== -->
-                <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
-                    <!-- MODIFICAÇÃO: Alterado de 'lg:grid-cols-4' para 'lg:flex' para rebalancear colunas -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:flex gap-4 items-end">
-                        
-                        <!-- Col 1: Período -->
-                        <div class="relative lg:flex-1">
-                            <label for="stats-periodo-button" class="text-sm font-medium text-gray-700 mb-1 block">Período</label>
-                            <button type="button" id="stats-periodo-button" data-value="tudo" class="w-full p-2 border border-gray-300 rounded-lg bg-white text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <span id="stats-periodo-value" class="text-gray-900">Tudo</span>
-                                <i class="fas fa-calendar-alt text-gray-400"></i>
-                            </button>
-                            <div id="stats-periodo-panel" class="period-dropdown-panel hidden absolute z-20 mt-1 w-auto bg-white border border-gray-300 rounded-lg shadow-lg flex">
-                                <ul id="stats-periodo-options" class="py-1 w-48 max-h-[280px] overflow-y-auto">
-                                    <li class="period-option-item" data-value="hoje">Hoje</li>
-                                    <li class="period-option-item" data-value="ontem">Ontem</li>
-                                    <li class="period-option-item" data-value="ultimos-7-dias">Últimos 7 dias</li>
-                                    <li class="period-option-item" data-value="ultimos-15-dias">Últimos 15 dias</li>
-                                    <li class="period-option-item" data-value="este-mes">Este mês</li>
-                                    <li class="period-option-item" data-value="mes-passado">Mês passado</li>
-                                    <li class="period-option-item" data-value="ultimos-6-mesES">Últimos 6 meses</li>
-                                    <li class="period-option-item" data-value="ultimo-ano">Último ano</li>
-                                    <li class="period-option-item active" data-value="tudo">Tudo</li>
-                                    <li class="period-option-item" data-value="personalizado">Personalizado</li>
-                                </ul>
-                                <div id="stats-periodo-custom-range" class="hidden p-2 space-y-2 w-64 border-l border-gray-200">
-                                    <label class="text-xs text-gray-500">Início:</label>
-                                    <input type="date" id="stats-periodo-start" class="w-full p-1 border border-gray-300 rounded-lg text-sm">
-                                    <label class="text-xs text-gray-500">Fim:</label>
-                                    <input type="date" id="stats-periodo-end" class="w-full p-1 border border-gray-300 rounded-lg text-sm">
-                                    <button id="stats-periodo-custom-apply" class="w-full bg-blue-600 text-white text-sm py-1.5 rounded-lg hover:bg-blue-700">Aplicar</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Fim Período -->
-    
-                        <!-- Col 2: Matéria (Novo) -->
-                        <div class="lg:flex-1">
-                            <label class="text-sm font-medium text-gray-700 mb-1 block">Matéria</label>
-                            <div id="stats-materia-filter-custom" class="relative custom-select-container">
-                                 <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center">
-                                     <span class="custom-select-value">Todas</span>
-                                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                 </button>
-                                 <div class="custom-select-panel hidden absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-                                    <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
-                                    <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
-                                        <!-- Opções serão inseridas pelo JS -->
-                                    </div>
-                                 </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Col 3: Assunto (Novo) -->
-                        <div class="lg:flex-1">
-                            <label class="text-sm font-medium text-gray-700 mb-1 block">Assunto</label>
-                             <div id="stats-assunto-filter-custom" class="relative custom-select-container">
-                                 <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                     <span class="custom-select-value">Todos</span>
-                                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                 </button>
-                                 <div class="custom-select-panel hidden absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-                                    <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
-                                    <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
-                                       <!-- Opções serão inseridas pelo JS -->
-                                    </div>
-                                 </div>
-                            </div>
-                        </div>
-    
-                        <!-- Col 4: Botão Filtrar (Movido e modificado) -->
-                        <div>
-                            <!-- MODIFICAÇÃO: Removido font-bold, rounded-lg, w-full. Alterado px-6 para px-4 -->
-                            <button id="stats-filter-btn" class="bg-blue-600 text-white py-2 px-4 hover:bg-blue-700">Filtrar</button>
-                        </div>
-                    </div>
-                </div>
-                <!-- ===== FIM DA MODIFICAÇÃO ===== -->
-    
-                <div id="stats-main-content">
-                    <!-- Abas de Navegação -->
-                    <div class="mb-4">
-                        <nav id="stats-tabs-container" class="flex space-x-1">
-                            <button data-tab="desempenho-geral" class="tab-button active">Desempenho Geral</button>
-                            <!-- ===== INÍCIO DA MODIFICAÇÃO ===== -->
-                            <button data-tab="evolucao" class="tab-button">Evolução</button>
-                            <!-- ===== FIM DA MODIFICAÇÃO ===== -->
-                        </nav>
-                    </div>
-    
-                    <!-- Container do Conteúdo das Abas -->
-                    <div id="stats-tabs-content-container" class="bg-gray-50 rounded-b-xl rounded-tr-xl shadow-md -mt-4 p-6">
-                        <!-- Aba de Desempenho Geral -->
-                        <div id="desempenho-geral-tab" class="stats-tab-content">
-                            <!-- MODIFICAÇÃO: Filtro removido daqui -->
-    
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                <!-- Coluna dos Cards -->
-                                <div class="lg:col-span-1 grid grid-cols-2 gap-6">
-                                    <div class="bg-white p-4 rounded-xl shadow text-center flex flex-col justify-center">
-                                        <h3 class="text-sm font-medium text-gray-500">Resolvidas</h3>
-                                        <p id="stats-geral-resolvidas" class="mt-1 text-3xl font-semibold text-gray-900">0</p>
-                                    </div>
-                                    <div class="bg-white p-4 rounded-xl shadow text-center flex flex-col justify-center">
-                                        <h3 class="text-sm font-medium text-gray-500">Matérias</h3>
-                                        <p id="stats-geral-materias" class="mt-1 text-3xl font-semibold text-blue-600">0</p>
-                                    </div>
-                                    <div class="bg-white p-4 rounded-xl shadow text-center flex flex-col justify-center">
-                                        <h3 class="text-sm font-medium text-gray-500">Acertos</h3>
-                                        <p id="stats-geral-acertos" class="mt-1 text-3xl font-semibold text-green-600">0</p>
-                                    </div>
-                                    <div class="bg-white p-4 rounded-xl shadow text-center flex flex-col justify-center">
-                                        <h3 class="text-sm font-medium text-gray-500">Erros</h3>
-                                        <p id="stats-geral-erros" class="mt-1 text-3xl font-semibold text-red-600">0</p>
-                                    </div>
-                                </div>
-                                <!-- Coluna do Gráfico -->
-                                <div class="lg:col-span-2 flex items-center justify-center">
-                                    <div class="relative w-full max-w-md mx-auto h-96">
-                                        <canvas id="statsPagePerformanceChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-    
-                            <!-- Tabela de Desempenho por Matéria -->
-                            <div id="stats-desempenho-materia-container" class="mt-8">
-                                <!-- Tabela será renderizada aqui pelo stats.js -->
-                                <!-- Rodapé de Seleção será renderizado aqui pelo stats.js -->
-                            </div>
-                        </div>
-                        
-                        <!-- ===== INÍCIO DA MODIFICAÇÃO ===== -->
-                        <!-- Nova Aba de Evolução -->
-                        <div id="evolucao-tab" class="stats-tab-content hidden">
-                            <!-- Filtro de Exibição -->
-                            <div class="flex items-center space-x-4 mb-6">
-                                <span class="text-sm font-medium text-gray-700">Exibir:</span>
-                                <label for="radio-resolucoes" class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="radio" id="radio-resolucoes" name="evolucao-filter" value="resolucoes" class="text-blue-600 focus:ring-blue-500" checked>
-                                    <span class="text-sm text-gray-700">Número de resoluções</span>
-                                </label>
-                                <label for="radio-desempenho" class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="radio" id="radio-desempenho" name="evolucao-filter" value="desempenho" class="text-blue-600 focus:ring-blue-500">
-                                    <span class="text-sm text-gray-700">Desempenho (%)</span>
-                                </label>
-                            </div>
-    
-                            <!-- Gráfico de Evolução -->
-                            <div class="relative w-full h-96">
-                                <canvas id="evolutionChartCanvas"></canvas>
-                            </div>
-                        </div>
-                        <!-- ===== FIM DA MODIFICAÇÃO ===== -->
-                    </div>
-                </div>
+                    <button id="add-caderno-to-folder-btn" class="hidden bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-300 flex items-center">
+                         <i class="fas fa-plus mr-2"></i>
+                         Adicionar Caderno
+                    </button>
+                 </div>
             </div>
-    
-        </main>
+            <div id="saved-cadernos-list-container">
+                <!-- Pastas e cadernos serão inseridos aqui -->
+            </div>
+        </div>
 
-    </div>
-    <!-- FIM: Contêiner do Conteúdo Principal -->
+        <div id="materias-view" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                 <h2 id="materias-view-title" class="text-2xl font-bold text-gray-800">Matérias</h2>
+                 <button id="back-to-materias-btn" class="hidden bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Voltar
+                </button>
+            </div>
+            <div id="materias-list-container" class="space-y-2">
+                <!-- Matérias will be inserted here -->
+            </div>
+            <div id="assuntos-list-container" class="hidden">
+                 <!-- Assuntos will be inserted here -->
+            </div>
+        </div>
+
+        <div id="revisao-view" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                 <h2 class="text-2xl font-bold text-gray-800">Minhas Revisões</h2>
+                 <button id="start-selected-review-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center" disabled>
+                    <i class="fas fa-play mr-2"></i>
+                    Iniciar Revisão
+                </button>
+            </div>
+            <div id="review-table-container" class="bg-gray-50 rounded-xl shadow-md overflow-x-auto">
+                <!-- Tabela de revisão será inserida aqui -->
+            </div>
+        </div>
+
+        <div id="estatisticas-view" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                 <h2 class="text-2xl font-bold text-gray-800">Minhas Estatísticas</h2>
+                 <button id="reset-all-progress-btn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors duration-300 flex items-center text-sm">
+                    <i class="fas fa-trash-alt mr-2"></i>
+                    Resetar Progresso
+                </button>
+            </div>
+
+            <!-- ===== INÍCIO DA MODIFICAÇÃO: Filtro da aba Estatísticas redesenhado ===== -->
+            <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
+                <!-- MODIFICAÇÃO: Alterado de 'lg:grid-cols-4' para 'lg:flex' para rebalancear colunas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:flex gap-4 items-end">
+                    
+                    <!-- Col 1: Período -->
+                    <div class="relative lg:flex-1">
+                        <label for="stats-periodo-button" class="text-sm font-medium text-gray-700 mb-1 block">Período</label>
+                        <button type="button" id="stats-periodo-button" data-value="tudo" class="w-full p-2 border border-gray-300 rounded-lg bg-white text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span id="stats-periodo-value" class="text-gray-900">Tudo</span>
+                            <i class="fas fa-calendar-alt text-gray-400"></i>
+                        </button>
+                        <div id="stats-periodo-panel" class="period-dropdown-panel hidden absolute z-20 mt-1 w-auto bg-white border border-gray-300 rounded-lg shadow-lg flex">
+                            <ul id="stats-periodo-options" class="py-1 w-48 max-h-[280px] overflow-y-auto">
+                                <li class="period-option-item" data-value="hoje">Hoje</li>
+                                <li class="period-option-item" data-value="ontem">Ontem</li>
+                                <li class="period-option-item" data-value="ultimos-7-dias">Últimos 7 dias</li>
+                                <li class="period-option-item" data-value="ultimos-15-dias">Últimos 15 dias</li>
+                                <li class="period-option-item" data-value="este-mes">Este mês</li>
+                                <li class="period-option-item" data-value="mes-passado">Mês passado</li>
+                                <li class="period-option-item" data-value="ultimos-6-mesES">Últimos 6 meses</li>
+                                <li class="period-option-item" data-value="ultimo-ano">Último ano</li>
+                                <li class="period-option-item active" data-value="tudo">Tudo</li>
+                                <li class="period-option-item" data-value="personalizado">Personalizado</li>
+                            </ul>
+                            <div id="stats-periodo-custom-range" class="hidden p-2 space-y-2 w-64 border-l border-gray-200">
+                                <label class="text-xs text-gray-500">Início:</label>
+                                <input type="date" id="stats-periodo-start" class="w-full p-1 border border-gray-300 rounded-lg text-sm">
+                                <label class="text-xs text-gray-500">Fim:</label>
+                                <input type="date" id="stats-periodo-end" class="w-full p-1 border border-gray-300 rounded-lg text-sm">
+                                <button id="stats-periodo-custom-apply" class="w-full bg-blue-600 text-white text-sm py-1.5 rounded-lg hover:bg-blue-700">Aplicar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Fim Período -->
+
+                    <!-- Col 2: Matéria (Novo) -->
+                    <div class="lg:flex-1">
+                        <label class="text-sm font-medium text-gray-700 mb-1 block">Matéria</label>
+                        <div id="stats-materia-filter-custom" class="relative custom-select-container">
+                             <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center">
+                                 <span class="custom-select-value">Todas</span>
+                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                             </button>
+                             <div class="custom-select-panel hidden absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                                <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
+                                <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
+                                    <!-- Opções serão inseridas pelo JS -->
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Col 3: Assunto (Novo) -->
+                    <div class="lg:flex-1">
+                        <label class="text-sm font-medium text-gray-700 mb-1 block">Assunto</label>
+                         <div id="stats-assunto-filter-custom" class="relative custom-select-container">
+                             <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                 <span class="custom-select-value">Todos</span>
+                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                             </button>
+                             <div class="custom-select-panel hidden absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                                <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
+                                <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
+                                   <!-- Opções serão inseridas pelo JS -->
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Col 4: Botão Filtrar (Movido e modificado) -->
+                    <div>
+                        <!-- MODIFICAÇÃO: Removido font-bold, rounded-lg, w-full. Alterado px-6 para px-4 -->
+                        <button id="stats-filter-btn" class="bg-blue-600 text-white py-2 px-4 hover:bg-blue-700">Filtrar</button>
+                    </div>
+                </div>
+            </div>
+            <!-- ===== FIM DA MODIFICAÇÃO ===== -->
+
+            <div id="stats-main-content">
+                <!-- Abas de Navegação -->
+                <div class="mb-4">
+                    <nav id="stats-tabs-container" class="flex space-x-1">
+                        <button data-tab="desempenho-geral" class="tab-button active">Desempenho Geral</button>
+                        <!-- ===== INÍCIO DA MODIFICAÇÃO ===== -->
+                        <button data-tab="evolucao" class="tab-button">Evolução</button>
+                        <!-- ===== FIM DA MODIFICAÇÃO ===== -->
+                    </nav>
+                </div>
+
+                <!-- Container do Conteúdo das Abas -->
+                <div id="stats-tabs-content-container" class="bg-gray-50 rounded-b-xl rounded-tr-xl shadow-md -mt-4 p-6">
+                    <!-- Aba de Desempenho Geral -->
+                    <div id="desempenho-geral-tab" class="stats-tab-content">
+                        <!-- MODIFICAÇÃO: Filtro removido daqui -->
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Coluna dos Cards -->
+                            <div class="lg:col-span-1 grid grid-cols-2 gap-6">
+                                <div class="bg-white p-4 rounded-xl shadow text-center flex flex-col justify-center">
+                                    <h3 class="text-sm font-medium text-gray-500">Resolvidas</h3>
+                                    <p id="stats-geral-resolvidas" class="mt-1 text-3xl font-semibold text-gray-900">0</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-xl shadow text-center flex flex-col justify-center">
+                                    <h3 class="text-sm font-medium text-gray-500">Matérias</h3>
+                                    <p id="stats-geral-materias" class="mt-1 text-3xl font-semibold text-blue-600">0</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-xl shadow text-center flex flex-col justify-center">
+                                    <h3 class="text-sm font-medium text-gray-500">Acertos</h3>
+                                    <p id="stats-geral-acertos" class="mt-1 text-3xl font-semibold text-green-600">0</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-xl shadow text-center flex flex-col justify-center">
+                                    <h3 class="text-sm font-medium text-gray-500">Erros</h3>
+                                    <p id="stats-geral-erros" class="mt-1 text-3xl font-semibold text-red-600">0</p>
+                                </div>
+                            </div>
+                            <!-- Coluna do Gráfico -->
+                            <div class="lg:col-span-2 flex items-center justify-center">
+                                <div class="relative w-full max-w-md mx-auto h-96">
+                                    <canvas id="statsPagePerformanceChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabela de Desempenho por Matéria -->
+                        <div id="stats-desempenho-materia-container" class="mt-8">
+                            <!-- Tabela será renderizada aqui pelo stats.js -->
+                            <!-- Rodapé de Seleção será renderizado aqui pelo stats.js -->
+                        </div>
+                    </div>
+                    
+                    <!-- ===== INÍCIO DA MODIFICAÇÃO ===== -->
+                    <!-- Nova Aba de Evolução -->
+                    <div id="evolucao-tab" class="stats-tab-content hidden">
+                        <!-- Filtro de Exibição -->
+                        <div class="flex items-center space-x-4 mb-6">
+                            <span class="text-sm font-medium text-gray-700">Exibir:</span>
+                            <label for="radio-resolucoes" class="flex items-center space-x-2 cursor-pointer">
+                                <input type="radio" id="radio-resolucoes" name="evolucao-filter" value="resolucoes" class="text-blue-600 focus:ring-blue-500" checked>
+                                <span class="text-sm text-gray-700">Número de resoluções</span>
+                            </label>
+                            <label for="radio-desempenho" class="flex items-center space-x-2 cursor-pointer">
+                                <input type="radio" id="radio-desempenho" name="evolucao-filter" value="desempenho" class="text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Desempenho (%)</span>
+                            </label>
+                        </div>
+
+                        <!-- Gráfico de Evolução -->
+                        <div class="relative w-full h-96">
+                            <canvas id="evolutionChartCanvas"></canvas>
+                        </div>
+                    </div>
+                    <!-- ===== FIM DA MODIFICAÇÃO ===== -->
+                </div>
+            </div>
+        </div>
+
+    </main>
 
     <!-- Modal de Autenticação -->
     <div id="auth-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
@@ -653,7 +662,25 @@
              </div>
         </div>
     </div>
-    
+
+    <!-- 
+      EXPLICAÇÃO DA CORREÇÃO:
+      O comentário original no seu código indicava que o 'src' estava
+      errado ('App-Questoes/js/app.js').
+      
+      O caminho CORRETO é 'js/app.js', pois o 'index.html' está na
+      raiz do projeto (ex: 'App-Questoes/') e a pasta 'js'
+      está dentro dessa raiz.
+      
+      O 'index.html' só precisa carregar UM arquivo: o 'app.js'.
+      O 'app.js' (sendo um "module") é responsável por importar
+      todos os outros arquivos que ele precisa (como 'firestore.js', 'state.js', etc.).
+      
+      Os erros 404 que você vê (ex: 'App-Questoes/services/firestore.js')
+      estão com o caminho errado, faltando a pasta 'js/'. Isso acontecia
+      porque a versão *antiga* do seu 'index.html' provavelmente estava
+      tentando carregar esses arquivos diretamente e com o caminho errado.
+    -->
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
