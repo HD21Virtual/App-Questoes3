@@ -10,7 +10,9 @@ import { auth } from '../firebase-config.js';
 // --- CORREÇÃO: Importar 'state' e 'saveSessionStats' ---
 import { state, setState, resetStateOnLogout, clearUnsubscribes, clearSessionStats } from '../state.js';
 // CORREÇÃO: Importar saveSessionStats para salvar o progresso ao deslogar
-import { setupAllListeners, saveSessionStats } from '../services/firestore.js';
+// ===== INÍCIO DA CORREÇÃO: Caminho do import ajustado =====
+import { setupAllListeners, saveSessionStats } from './firestore.js'; 
+// ===== FIM DA CORREÇÃO: Era '../services/firestore.js' e foi corrigido para './firestore.js' =====
 import { updateUserUI } from '../ui/ui-helpers.js';
 import { closeAuthModal } from '../ui/modal.js';
 import DOM from '../dom-elements.js';
