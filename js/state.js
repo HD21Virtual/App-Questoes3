@@ -15,7 +15,6 @@ let state = {
     currentCadernoId: null,
     editingId: null,
     editingType: null,
-    editingParentId: null, // <-- ADICIONADO
     isAddingQuestionsMode: { active: false, cadernoId: null },
     createCadernoWithFilteredQuestions: false,
     deletingId: null,
@@ -79,7 +78,6 @@ export function resetStateOnLogout() {
         userQuestionHistoryMap: new Map(), // <- ADICIONADO
         savedFilters: [],
         sessionStats: [],
-        editingParentId: null, // <-- ADICIONADO
     };
 }
 
