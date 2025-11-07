@@ -122,7 +122,7 @@ function renderFolderContentView() {
 
 // Renders the root view of the "Cadernos" tab, showing all folders and unfiled notebooks.
 function renderRootCadernosView() {
-    DOM.cadernosViewTitle.textContent = 'Meus Cadernos';
+    
     DOM.backToFoldersBtn.classList.add('hidden');
     DOM.addCadernoToFolderBtn.classList.add('hidden');
     DOM.createFolderBtn.classList.remove('hidden');
@@ -424,3 +424,4 @@ export async function removeQuestionFromCaderno(questionId) {
     if (!state.currentCadernoId || !state.currentUser) return;
     await removeQuestionIdFromFirestore(state.currentCadernoId, questionId);
 }
+
