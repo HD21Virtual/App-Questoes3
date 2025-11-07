@@ -113,9 +113,7 @@ export async function fetchAllQuestions() {
 export function setupAllListeners(userId) {
     // Queries must be declared before they are used in onSnapshot
     const cadernosQuery = query(collection(db, 'users', userId, 'cadernos'), orderBy('name'));
-    // ===== INÍCIO DA MODIFICAÇÃO: Ordena pastas por nome =====
     const foldersQuery = query(collection(db, 'users', userId, 'folders'), orderBy('name'));
-    // ===== FIM DA MODIFICAÇÃO =====
     const filtrosQuery = query(collection(db, 'users', userId, 'filtros'));
     const sessionsQuery = query(collection(db, 'users', userId, 'sessions'), orderBy('createdAt', 'desc'));
     const reviewQuery = query(collection(db, 'users', userId, 'reviewItems'));
@@ -312,27 +310,19 @@ export async function createCaderno(name, questionIds, folderId) {
     await addDoc(cadernosCollection, caderno);
 }
 
-// ===== INÍCIO DA MODIFICAÇÃO =====
-export async function createOrUpdateName(type, name, id = null, parentId = null) {
+export async function createOrUpdateName(type, name, id = null) {
     if (id) {
-        // Editando (Renomeando)
         const collectionPath = type === 'folder' ? 'folders' : 'cadernos';
         const itemRef = doc(db, 'users', state.currentUser.uid, collectionPath, id);
         await updateDoc(itemRef, { name: name });
     } else {
-        // Criando
         if (type === 'folder') {
-            const folderData = { 
-                name: name, 
-                createdAt: serverTimestamp(),
-                parentId: parentId || null // Adiciona o parentId
-            };
+            const folderData = { name: name, createdAt: serverTimestamp() };
             const foldersCollection = collection(db, 'users', state.currentUser.uid, 'folders');
             await addDoc(foldersCollection, folderData);
         }
     }
 }
-// ===== FIM DA MODIFICAÇÃO =====
 
 
 export async function saveSessionStats() {
@@ -493,40 +483,18 @@ export async function saveCadernoState(cadernoId, questionIndex) {
     }
 }
 
-// ===== INÍCIO DA MODIFICAÇÃO: deleteItem agora é recursivo para pastas =====
-async function deleteFolderRecursive(userId, folderId, batch) {
-    // 1. Encontra e deleta cadernos nesta pasta
-    const cadernosQuery = query(collection(db, 'users', userId, 'cadernos'), where('folderId', '==', folderId));
-    const cadernosSnapshot = await getDocs(cadernosQuery);
-    cadernosSnapshot.forEach(doc => {
-        batch.delete(doc.ref);
-    });
-
-    // 2. Encontra e deleta subpastas
-    const subFoldersQuery = query(collection(db, 'users', userId, 'folders'), where('parentId', '==', folderId));
-    const subFoldersSnapshot = await getDocs(subFoldersQuery);
-    
-    // Array de promessas para as deleções recursivas
-    const recursiveDeletes = [];
-    subFoldersSnapshot.forEach(subDoc => {
-        // Deleta a subpasta recursivamente
-        recursiveDeletes.push(deleteFolderRecursive(userId, subDoc.id, batch));
-    });
-    
-    // Espera todas as sub-deleções (embora o batch ainda não tenha sido comitado)
-    await Promise.all(recursiveDeletes);
-    
-    // 3. Deleta a pasta atual
-    const folderRef = doc(db, 'users', userId, 'folders', folderId);
-    batch.delete(folderRef);
-}
-
 export async function deleteItem(type, id) {
     if (!state.currentUser) return;
 
     if (type === 'folder') {
+        const cadernosToDelete = state.userCadernos.filter(c => c.folderId === id);
         const batch = writeBatch(db);
-        await deleteFolderRecursive(state.currentUser.uid, id, batch);
+        cadernosToDelete.forEach(caderno => {
+            const cadernoRef = doc(db, 'users', state.currentUser.uid, 'cadernos', caderno.id);
+            batch.delete(cadernoRef);
+        });
+        const folderRef = doc(db, 'users', state.currentUser.uid, 'folders', id);
+        batch.delete(folderRef);
         await batch.commit();
 
     } else if (type === 'caderno') {
@@ -534,7 +502,6 @@ export async function deleteItem(type, id) {
         await deleteDoc(cadernoRef);
     }
 }
-// ===== FIM DA MODIFICAÇÃO =====
 
 export async function addQuestionIdsToCaderno(cadernoId, questionIds) {
     if (!state.currentUser || !questionIds || questionIds.length === 0) return;
