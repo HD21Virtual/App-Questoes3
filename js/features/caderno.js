@@ -64,7 +64,10 @@ function renderFolderContentView() {
         return; 
     }
 
-    DOM.cadernosViewTitle.textContent = folder.name;
+    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+    // A linha abaixo foi comentada para remover o título da pasta da barra de ações.
+    // DOM.cadernosViewTitle.textContent = folder.name;
+    // ===== FIM DA MODIFICAÇÃO =====
     DOM.backToFoldersBtn.classList.remove('hidden');
     DOM.addCadernoToFolderBtn.classList.remove('hidden');
     DOM.createFolderBtn.classList.add('hidden');
@@ -267,7 +270,7 @@ export async function renderFoldersAndCadernos() {
         }
         // ===== FIM DA MODIFICAÇÃO =====
 
-        renderFolderContentView();
+        renderFolderContentView(); // <-- Esta função é chamada aqui
     } else {
         renderRootCadernosView();
     }
