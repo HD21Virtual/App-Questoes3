@@ -1,7 +1,8 @@
 import { initAuth } from './services/auth.js';
 // ===== INÍCIO DA CORREÇÃO: Imports consolidados =====
-import { fetchAllQuestions, setupAllEventListeners } from './services/firestore.js';
-// ===== FIM DA CORREÇÃO: 'setupAllEventListeners' movido de 'event-listeners.js'
+// CORREÇÃO: Removido 'setupAllEventListeners'. Isso agora é chamado dentro de 'initAuth'.
+import { fetchAllQuestions } from './services/firestore.js';
+// ===== FIM DA CORREÇÃO =====
 import { applyFilters, setupCustomSelects } from './features/filter.js';
 import { initDOM } from './dom-elements.js';
 
@@ -10,10 +11,11 @@ async function main() {
     initDOM();
 
     // 2. Initialize authentication which sets up the user state and initial view
+    // 'initAuth' agora é responsável por chamar 'setupAllListeners' com o user.uid
     initAuth();
 
-    // 3. Set up all event listeners for the application
-    setupAllEventListeners();
+    // 3. Set up all event listeners for the application (REMOVIDO)
+    // setupAllEventListeners(); // <-- REMOVIDO (Chamado por initAuth)
 
     // 4. Fetch initial data required for the app to function
     await fetchAllQuestions();
