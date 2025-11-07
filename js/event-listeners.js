@@ -380,6 +380,38 @@ export function setupAllEventListeners() {
         else if (target.closest('.remove-question-btn')) removeQuestionFromCaderno(target.closest('.remove-question-btn').dataset.questionId);
 
         // --- Cadernos / Folders ---
+        // ===== INÍCIO DA MODIFICAÇÃO: Lógica de delegação movida para cima =====
+        else if (target.closest('.edit-folder-btn')) {
+            const btn = target.closest('.edit-folder-btn');
+            openNameModal('folder', btn.dataset.id, btn.dataset.name);
+        }
+        else if (target.closest('.delete-folder-btn')) {
+            const btn = target.closest('.delete-folder-btn');
+            const folderId = btn.dataset.id;
+            const folderName = btn.dataset.name || state.userFolders.find(f => f.id === folderId)?.name || 'esta pasta';
+            
+            setState('deletingId', folderId);
+            setState('deletingType', 'folder');
+            if(DOM.confirmationModalTitle) DOM.confirmationModalTitle.textContent = `Excluir Pasta`;
+            if(DOM.confirmationModalText) DOM.confirmationModalText.innerHTML = `Deseja excluir a pasta <strong>"${folderName}"</strong>? <br><br> <span class="font-bold text-red-600">Todos os cadernos dentro dela também serão excluídos.</span>`;
+            if(DOM.confirmationModal) DOM.confirmationModal.classList.remove('hidden');
+        }
+        else if (target.closest('.edit-caderno-btn')) {
+            const btn = target.closest('.edit-caderno-btn');
+            openNameModal('caderno', btn.dataset.id, btn.dataset.name);
+        }
+        else if (target.closest('.delete-caderno-btn')) {
+            const btn = target.closest('.delete-caderno-btn');
+            const cadernoId = btn.dataset.id;
+            const cadernoName = btn.dataset.name || state.userCadernos.find(c => c.id === cadernoId)?.name || 'este caderno';
+
+            setState('deletingId', cadernoId);
+            setState('deletingType', 'caderno');
+            if(DOM.confirmationModalTitle) DOM.confirmationModalTitle.textContent = `Excluir Caderno`;
+            if(DOM.confirmationModalText) DOM.confirmationModalText.innerHTML = `Deseja excluir o caderno <strong>"${cadernoName}"</strong>?`;
+            if(DOM.confirmationModal) DOM.confirmationModal.classList.remove('hidden');
+        }
+        // ===== FIM DA MODIFICAÇÃO =====
         else if (target.closest('#saved-cadernos-list-container')) {
             handleCadernoItemClick(event);
             handleFolderItemClick(event);
