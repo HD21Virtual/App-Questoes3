@@ -44,20 +44,14 @@ const handleSaveFilter = async () => {
     closeSaveModal();
 };
 
-// ===== INÍCIO DA MODIFICAÇÃO =====
 const handleNameConfirm = async () => {
     const name = DOM.nameInput.value.trim();
     if (!name || !state.currentUser || !state.editingType) return;
 
-    // Lê o parentId do estado
-    const parentId = state.editingParentId;
-    
-    // Passa o parentId para a função de salvar
-    await createOrUpdateName(state.editingType, name, state.editingId, parentId);
+    await createOrUpdateName(state.editingType, name, state.editingId);
     
     closeNameModal();
 };
-// ===== FIM DA MODIFICAÇÃO =====
 
 const handleCadernoConfirm = async () => {
     const name = DOM.cadernoNameInput.value.trim();
@@ -295,13 +289,6 @@ export function setupAllEventListeners() {
                 d.classList.add('hidden');
             });
         }
-        // ===== INÍCIO DA MODIFICAÇÃO: Fechar dropdown da pasta =====
-        if (!target.closest('.folder-menu-dropdown') && !target.closest('.folder-menu-btn')) {
-            document.querySelectorAll('.folder-menu-dropdown').forEach(d => {
-                d.classList.add('hidden');
-            });
-        }
-        // ===== FIM DA MODIFICAÇÃO =====
 
         // Esconde o menu mobile se o clique for fora dele
         if (!target.closest('#mobile-menu') && !target.closest('#hamburger-btn')) {
@@ -341,32 +328,10 @@ export function setupAllEventListeners() {
                         d.classList.add('hidden');
                     }
                 });
-                // ===== INÍCIO DA MODIFICAÇÃO: Esconde dropdowns de pasta =====
-                document.querySelectorAll('.folder-menu-dropdown').forEach(d => {
-                    d.classList.add('hidden');
-                });
-                // ===== FIM DA MODIFICAÇÃO =====
                 // Alterna o dropdown atual
                 dropdown.classList.toggle('hidden');
             }
         }
-        // ===== INÍCIO DA MODIFICAÇÃO: Lidar com dropdown da pasta =====
-        else if (target.closest('.folder-menu-btn')) {
-            const button = target.closest('.folder-menu-btn');
-            const folderId = button.dataset.folderId;
-            const dropdown = document.getElementById(`folder-menu-dropdown-${folderId}`);
-            
-            if (dropdown) {
-                // Esconde todos os outros dropdowns
-                document.querySelectorAll('.folder-menu-dropdown').forEach(d => {
-                    if (d.id !== dropdown.id) d.classList.add('hidden');
-                });
-                document.querySelectorAll('.caderno-menu-dropdown').forEach(d => d.classList.add('hidden'));
-                
-                dropdown.classList.toggle('hidden');
-            }
-        }
-        // ===== FIM DA MODIFICAÇÃO =====
 
         // --- Auth ---
         else if (target.closest('#show-login-modal-btn') || target.closest('#login-from-empty')) {
@@ -418,39 +383,19 @@ export function setupAllEventListeners() {
         // ===== INÍCIO DA MODIFICAÇÃO: Lógica de delegação movida para cima =====
         else if (target.closest('.edit-folder-btn')) {
             const btn = target.closest('.edit-folder-btn');
-            // Fecha o dropdown
-            const dropdown = btn.closest('.folder-menu-dropdown');
-            if(dropdown) dropdown.classList.add('hidden');
-            
             openNameModal('folder', btn.dataset.id, btn.dataset.name);
         }
         else if (target.closest('.delete-folder-btn')) {
             const btn = target.closest('.delete-folder-btn');
-            // Fecha o dropdown
-            const dropdown = btn.closest('.folder-menu-dropdown');
-            if(dropdown) dropdown.classList.add('hidden');
-            
             const folderId = btn.dataset.id;
             const folderName = btn.dataset.name || state.userFolders.find(f => f.id === folderId)?.name || 'esta pasta';
             
             setState('deletingId', folderId);
             setState('deletingType', 'folder');
             if(DOM.confirmationModalTitle) DOM.confirmationModalTitle.textContent = `Excluir Pasta`;
-            // ===== MODIFICAÇÃO: Aviso sobre subpastas =====
-            if(DOM.confirmationModalText) DOM.confirmationModalText.innerHTML = `Deseja excluir a pasta <strong>"${folderName}"</strong>? <br><br> <span class="font-bold text-red-600">Todas as subpastas e cadernos dentro dela também serão excluídos.</span>`;
+            if(DOM.confirmationModalText) DOM.confirmationModalText.innerHTML = `Deseja excluir a pasta <strong>"${folderName}"</strong>? <br><br> <span class="font-bold text-red-600">Todos os cadernos dentro dela também serão excluídos.</span>`;
             if(DOM.confirmationModal) DOM.confirmationModal.classList.remove('hidden');
         }
-        // ===== INÍCIO DA MODIFICAÇÃO: Botão Criar Subpasta =====
-        else if (target.closest('[data-action="create-subfolder"]')) {
-            const btn = target.closest('[data-action="create-subfolder"]');
-            // Fecha o dropdown
-            const dropdown = btn.closest('.folder-menu-dropdown');
-            if(dropdown) dropdown.classList.add('hidden');
-            
-            // Abre o modal de nome, passando o 'currentFolderId' como 'parentId'
-            openNameModal('folder', null, '', state.currentFolderId);
-        }
-        // ===== FIM DA MODIFICAÇÃO =====
         else if (target.closest('.edit-caderno-btn')) {
             const btn = target.closest('.edit-caderno-btn');
             openNameModal('caderno', btn.dataset.id, btn.dataset.name);
