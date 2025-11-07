@@ -1,6 +1,7 @@
 import { initAuth } from './services/auth.js';
-import { fetchAllQuestions } from './services/firestore.js';
-import { setupAllEventListeners } from './event-listeners.js';
+// ===== INÍCIO DA CORREÇÃO: Imports consolidados =====
+import { fetchAllQuestions, setupAllEventListeners } from './services/firestore.js';
+// ===== FIM DA CORREÇÃO: 'setupAllEventListeners' movido de 'event-listeners.js'
 import { applyFilters, setupCustomSelects } from './features/filter.js';
 import { initDOM } from './dom-elements.js';
 
@@ -26,4 +27,3 @@ async function main() {
 
 // Wait for the DOM to be fully loaded before running the main script
 document.addEventListener('DOMContentLoaded', main);
-
