@@ -49,16 +49,11 @@ export function openCadernoModal(isCreatingWithFilter, folderId = null) {
         // Limpa opções anteriores, mas mantém o placeholder
         DOM.folderSelect.innerHTML = '<option value="">Salvar em (opcional)</option>';
         
-        // Popula com as pastas do usuário (incluindo subpastas)
-        // Idealmente, isso deveria ser uma árvore, mas por enquanto, apenas lista
-        const allFolders = state.userFolders.sort((a, b) => a.name.localeCompare(b.name));
-
-        allFolders.forEach(folder => {
+        // Popula com as pastas do usuário
+        state.userFolders.forEach(folder => {
             const option = document.createElement('option');
             option.value = folder.id;
-            // Tenta mostrar hierarquia simples
-            const prefix = folder.parentId ? '  ↳ ' : '';
-            option.textContent = `${prefix}${folder.name}`;
+            option.textContent = folder.name;
             DOM.folderSelect.appendChild(option);
         });
 
@@ -74,37 +69,18 @@ export function closeCadernoModal() {
     setState('createCadernoWithFilteredQuestions', false);
 }
 
-// ===== INÍCIO DA MODIFICAÇÃO =====
-export function openNameModal(type, id = null, name = '', parentId = null) {
+export function openNameModal(type, id = null, name = '') {
     setState('editingType', type);
     setState('editingId', id);
-    setState('editingParentId', parentId); // Salva o parentId no estado
-
     if(DOM.nameInput) DOM.nameInput.value = name;
-    
-    let title = '';
-    if (id) {
-        // Editando
-        title = `Editar ${type === 'folder' ? 'Pasta' : 'Caderno'}`;
-    } else {
-        // Criando
-        if (type === 'folder') {
-            title = parentId ? 'Criar Subpasta' : 'Criar Nova Pasta';
-        } else {
-            title = 'Criar Novo Caderno';
-        }
-    }
-    
-    if(DOM.nameModalTitle) DOM.nameModalTitle.textContent = title;
+    if(DOM.nameModalTitle) DOM.nameModalTitle.textContent = id ? `Editar ${type === 'folder' ? 'Pasta' : 'Caderno'}` : `Criar Nova ${type === 'folder' ? 'Pasta' : 'Caderno'}`;
     if(DOM.nameModal) DOM.nameModal.classList.remove('hidden');
 }
-// ===== FIM DA MODIFICAÇÃO =====
 
 export function closeNameModal() {
     if (DOM.nameModal) DOM.nameModal.classList.add('hidden');
     setState('editingId', null);
     setState('editingType', null);
-    setState('editingParentId', null); // Limpa o parentId
 }
 
 export function closeConfirmationModal() {
@@ -181,25 +157,11 @@ export async function showItemStatsModal(itemId, itemType, itemName) {
         const caderno = state.userCadernos.find(c => c.id === itemId);
         if (caderno) questionIds = caderno.questionIds || [];
     } else if (itemType === 'folder') {
-        // --- MODIFICAÇÃO: Coleta recursiva de IDs de cadernos ---
-        const collectQuestionIdsRecursive = (folderId) => {
-            let ids = [];
-            // Adiciona de cadernos nesta pasta
-            state.userCadernos.forEach(c => {
-                if (c.folderId === folderId && c.questionIds) {
-                    ids.push(...c.questionIds);
-                }
-            });
-            // Adiciona de subpastas
-            state.userFolders.forEach(subFolder => {
-                if (subFolder.parentId === folderId) {
-                    ids.push(...collectQuestionIdsRecursive(subFolder.id));
-                }
-            });
-            return ids;
-        };
-        questionIds = collectQuestionIdsRecursive(itemId);
-        // --- FIM DA MODIFICAÇÃO ---
+        state.userCadernos.forEach(c => {
+            if (c.folderId === itemId && c.questionIds) {
+                questionIds.push(...c.questionIds);
+            }
+        });
         questionIds = [...new Set(questionIds)];
     }
 
