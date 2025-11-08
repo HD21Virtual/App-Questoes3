@@ -83,6 +83,14 @@ export function initDOM() {
     DOM.nameInput = document.getElementById('name-input');
     DOM.nameModalTitle = document.getElementById('name-modal-title');
 
+    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+    // NOVO: Subfolder Modal
+    DOM.subfolderModal = document.getElementById('subfolder-modal');
+    DOM.subfolderNameInput = document.getElementById('subfolder-name-input');
+    DOM.confirmSubfolderBtn = document.getElementById('confirm-subfolder-btn');
+    DOM.cancelSubfolderBtn = document.getElementById('cancel-subfolder-btn');
+    // ===== FIM DA MODIFICAÇÃO =====
+
     // Confirmation Modal
     DOM.confirmationModal = document.getElementById('confirmation-modal');
     DOM.confirmationModalTitle = document.getElementById('confirmation-modal-title');
