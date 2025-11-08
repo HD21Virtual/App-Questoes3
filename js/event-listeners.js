@@ -51,6 +51,8 @@ const handleNameConfirm = async () => {
     const name = DOM.nameInput.value.trim();
     if (!name || !state.currentUser || !state.editingType) return;
 
+    // A função createOrUpdateName foi modificada em firestore.js para aceitar parentId
+    // Mas aqui (edição/criação de pasta raiz), o parentId é null, o que está correto.
     await createOrUpdateName(state.editingType, name, state.editingId);
     
     closeNameModal();
@@ -265,6 +267,10 @@ function handleReviewTableSelection(checkbox) {
             selectAllCheckbox.indeterminate = true;
         }
     }
+
+    // 4. Atualiza o botão de iniciar revisão
+    const anyChecked = DOM.reviewTableContainer.querySelector('.review-checkbox:checked');
+    DOM.startSelectedReviewBtn.disabled = !anyChecked;
 }
 // --- FIM DA MODIFICAÇÃO ---
 
@@ -287,8 +293,10 @@ export function setupAllEventListeners() {
         // --- Lógica de fechar menus (clique fora) ---
 
         // Esconde os menus de caderno se o clique for fora
-        if (!target.closest('.caderno-menu-dropdown') && !target.closest('.caderno-menu-btn')) {
+        // ===== INÍCIO DA MODIFICAÇÃO: Também esconde .folder-menu-btn =====
+        if (!target.closest('.caderno-menu-dropdown') && !target.closest('.caderno-menu-btn') && !target.closest('.folder-menu-btn')) {
             document.querySelectorAll('.caderno-menu-dropdown').forEach(d => {
+        // ===== FIM DA MODIFICAÇÃO =====
                 d.classList.add('hidden');
             });
         }
@@ -344,6 +352,25 @@ export function setupAllEventListeners() {
                 dropdown.classList.toggle('hidden');
             }
         }
+        
+        // ===== INÍCIO DA MODIFICAÇÃO: Adiciona handler para o menu da subpasta =====
+        else if (target.closest('.folder-menu-btn')) {
+            const button = target.closest('.folder-menu-btn');
+            const folderId = button.dataset.folderId;
+            const dropdown = document.getElementById(`menu-dropdown-folder-${folderId}`);
+            
+            if (dropdown) {
+                // Esconde todos os outros dropdowns abertos
+                document.querySelectorAll('.caderno-menu-dropdown, .folder-info-menu-dropdown').forEach(d => {
+                    if (d.id !== dropdown.id) {
+                        d.classList.add('hidden');
+                    }
+                });
+                // Alterna o dropdown atual
+                dropdown.classList.toggle('hidden');
+            }
+        }
+        // ===== FIM DA MODIFICAÇÃO =====
 
         // --- Auth ---
         else if (target.closest('#show-login-modal-btn') || target.closest('#login-from-empty')) {
@@ -405,7 +432,9 @@ export function setupAllEventListeners() {
             setState('deletingId', folderId);
             setState('deletingType', 'folder');
             if(DOM.confirmationModalTitle) DOM.confirmationModalTitle.textContent = `Excluir Pasta`;
-            if(DOM.confirmationModalText) DOM.confirmationModalText.innerHTML = `Deseja excluir a pasta <strong>"${folderName}"</strong>? <br><br> <span class="font-bold text-red-600">Todos os cadernos dentro dela também serão excluídos.</span>`;
+            // ===== INÍCIO DA MODIFICAÇÃO: Mensagem de confirmação atualizada =====
+            if(DOM.confirmationModalText) DOM.confirmationModalText.innerHTML = `Deseja excluir a pasta <strong>"${folderName}"</strong>? <br><br> <span class="font-bold text-red-600">Todos os cadernos e subpastas dentro dela também serão excluídos.</span>`;
+            // ===== FIM DA MODIFICAÇÃO =====
             if(DOM.confirmationModal) DOM.confirmationModal.classList.remove('hidden');
         }
         else if (target.closest('.edit-caderno-btn')) {
@@ -454,15 +483,23 @@ export function setupAllEventListeners() {
         else if (target.closest('#cancel-subfolder-btn')) {
             closeSubfolderModal();
         }
+        // ===== INÍCIO DA MODIFICAÇÃO: Lógica de criação de subpasta =====
         else if (target.closest('#confirm-subfolder-btn')) {
             const name = DOM.subfolderNameInput.value.trim();
-            // Lógica de criação da subpasta (desativada conforme solicitado)
-            console.log(`Lógica de criação de subpasta desativada. Nome digitado: ${name}`);
             
-            // Ação temporária: Apenas fecha o modal
-            closeSubfolderModal();
-            // TODO: Adicionar a lógica de criação da subpasta aqui (provavelmente em firestore.js e chamando-a aqui)
-            // ex: await createSubfolder(name, state.currentFolderId);
+            if (name && state.currentUser && state.currentFolderId) {
+                try {
+                    // Chama a função de criação, passando 'folder', o nome, null (novo id) e o parentId
+                    await createOrUpdateName('folder', name, null, state.currentFolderId);
+                    closeSubfolderModal();
+                } catch (error) {
+                    console.error("Erro ao criar subpasta:", error);
+                    // TODO: Mostrar um modal de erro para o usuário
+                    closeSubfolderModal();
+                }
+            } else {
+                closeSubfolderModal();
+            }
         }
         // ===== FIM DA MODIFICAÇÃO =====
 
@@ -847,9 +884,7 @@ export function setupAllEventListeners() {
                 }
             }
             
-            // Atualiza o botão de iniciar revisão
-            const anyChecked = DOM.reviewTableContainer.querySelector('.review-checkbox:checked');
-            DOM.startSelectedReviewBtn.disabled = !anyChecked;
+            // Atualiza o botão de iniciar revisão (movido para handleReviewTableSelection)
         }
         // --- FIM DA MODIFICAÇÃO ---
         
