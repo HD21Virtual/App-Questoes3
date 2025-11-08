@@ -1,4 +1,4 @@
-import { Timestamp, updateDoc, doc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { Timestamp, updateDoc, doc, writeBatch } from "https://www.gstatic.com/firebase/js/11.6.1/firebase-firestore.js";
 import { db } from '../firebase-config.js'; // Importar db
 import { state, setState } from '../state.js';
 import DOM from '../dom-elements.js';
@@ -66,6 +66,11 @@ function getCadernoRowHtml(caderno, isSubItem = false) {
     const indentation = isSubItem ? 'pl-10' : ''; // pl-10 = pl-4 (icon) + pl-6 (text)
     // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
     const isMoveMode = state.isMoveModeActive;
+    
+    // **NOVO**: Verifica se este item deve ser pré-selecionado
+    const isPreselected = state.itemToPreselectOnMove && 
+                          state.itemToPreselectOnMove.type === 'caderno' && 
+                          state.itemToPreselectOnMove.id === caderno.id;
     // ===== FIM DA MODIFICAÇÃO =====
 
     return `
@@ -74,7 +79,9 @@ function getCadernoRowHtml(caderno, isSubItem = false) {
         <div class="flex items-center flex-grow" style="min-width: 0;">
             <!-- Checkbox (visível apenas no modo Mover) -->
             <div class="checkbox-container ${isMoveMode ? 'flex' : 'hidden'} items-center pr-3">
-                <input type="checkbox" class="move-item-checkbox rounded" data-id="${caderno.id}" data-type="caderno">
+                <!-- ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) ===== -->
+                <input type="checkbox" class="move-item-checkbox rounded" data-id="${caderno.id}" data-type="caderno" ${isPreselected ? 'checked' : ''}>
+                <!-- ===== FIM DA MODIFICAÇÃO ===== -->
             </div>
             <!-- Ícone + Nome (clicável para abrir) -->
             <div class="flex items-center flex-grow cursor-pointer" data-action="open" style="min-width: 0;">
@@ -114,6 +121,11 @@ function getFolderRowHtml(folder, isSubfolder = false) {
 
     // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
     const isMoveMode = state.isMoveModeActive;
+    
+    // **NOVO**: Verifica se este item deve ser pré-selecionado
+    const isPreselected = state.itemToPreselectOnMove && 
+                          state.itemToPreselectOnMove.type === 'folder' && 
+                          state.itemToPreselectOnMove.id === folder.id;
     // ===== FIM DA MODIFICAÇÃO =====
 
     let countText = '';
@@ -134,7 +146,9 @@ function getFolderRowHtml(folder, isSubfolder = false) {
         <div class="flex items-center flex-grow" style="min-width: 0;">
             <!-- Checkbox (visível apenas no modo Mover) -->
             <div class="checkbox-container ${isMoveMode ? 'flex' : 'hidden'} items-center pr-3">
-                <input type="checkbox" class="move-item-checkbox rounded" data-id="${folder.id}" data-type="folder">
+                <!-- ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) ===== -->
+                <input type="checkbox" class="move-item-checkbox rounded" data-id="${folder.id}" data-type="folder" ${isPreselected ? 'checked' : ''}>
+                <!-- ===== FIM DA MODIFICAÇÃO ===== -->
             </div>
             <!-- Ícone + Nome (clicável para abrir) -->
             <div class="flex items-center flex-grow cursor-pointer" data-action="open" style="min-width: 0;">
@@ -205,6 +219,13 @@ function renderFolderContentView() {
 
     // 3. Renderiza Subpastas primeiro, cada uma com seus cadernos filhos
     subfolders.forEach(subfolder => {
+        // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+        // **NOVO**: Verifica se este item deve ser pré-selecionado
+        const isPreselected = state.itemToPreselectOnMove && 
+                              state.itemToPreselectOnMove.type === 'folder' && 
+                              state.itemToPreselectOnMove.id === subfolder.id;
+        // ===== FIM DA MODIFICAÇÃO =====
+
         // Renderiza a linha da subpasta
         // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
         html += `
@@ -214,7 +235,9 @@ function renderFolderContentView() {
                 <div class="flex items-center flex-grow" style="min-width: 0;">
                     <!-- Checkbox (visível apenas no modo Mover) -->
                     <div class="checkbox-container ${isMoveMode ? 'flex' : 'hidden'} items-center pr-3">
-                        <input type="checkbox" class="move-item-checkbox rounded" data-id="${subfolder.id}" data-type="folder">
+                        <!-- ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) ===== -->
+                        <input type="checkbox" class="move-item-checkbox rounded" data-id="${subfolder.id}" data-type="folder" ${isPreselected ? 'checked' : ''}>
+                        <!-- ===== FIM DA MODIFICAÇÃO ===== -->
                     </div>
                     
                     <!-- ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) ===== -->
@@ -313,12 +336,20 @@ function renderRootCadernosView() {
     // 3. Renderiza pastas raiz, cada uma com seus cadernos filhos
     sortedFolders.forEach(folder => {
         // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+        // **NOVO**: Verifica se este item deve ser pré-selecionado
+        const isPreselected = state.itemToPreselectOnMove && 
+                              state.itemToPreselectOnMove.type === 'folder' && 
+                              state.itemToPreselectOnMove.id === folder.id;
+        // ===== FIM DA MODIFICAÇÃO =====
+        
         html += `
         <div class="bg-white rounded-lg shadow-sm mb-2 folder-item-container" data-folder-id="${folder.id}">
             <div class="folder-item flex justify-between items-center p-4 hover:bg-gray-50 transition" data-folder-id="${folder.id}">
                 <!-- Checkbox (visível apenas no modo Mover) -->
                 <div class="checkbox-container ${isMoveMode ? 'flex' : 'hidden'} items-center pr-3">
-                    <input type="checkbox" class="move-item-checkbox rounded" data-id="${folder.id}" data-type="folder">
+                    <!-- ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) ===== -->
+                    <input type="checkbox" class="move-item-checkbox rounded" data-id="${folder.id}" data-type="folder" ${isPreselected ? 'checked' : ''}>
+                    <!-- ===== FIM DA MODIFICAÇÃO ===== -->
                 </div>
                 <!-- Ícone + Nome (clicável se não estiver no modo mover) -->
                 <div class="flex items-center ${isMoveMode ? '' : 'cursor-pointer'} flex-grow" ${isMoveMode ? '' : 'data-action="open"'} style="min-width: 0;">
@@ -437,6 +468,14 @@ export async function renderFoldersAndCadernos() {
         populateMoveFooterDropdowns(); // Popula os dropdowns
     } else {
         DOM.cadernosMoveFooter.classList.add('hidden');
+    }
+    // ===== FIM DA MODIFICAÇÃO =====
+
+    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+    // NOVO: Limpa o estado de pré-seleção após a renderização
+    // para que ele não persista em re-renderizações futuras.
+    if (state.itemToPreselectOnMove) {
+        setState('itemToPreselectOnMove', null);
     }
     // ===== FIM DA MODIFICAÇÃO =====
 }
@@ -639,8 +678,17 @@ export async function removeQuestionFromCaderno(questionId) {
  * Entra ou sai do modo de mover itens.
  */
 export function toggleMoveMode() {
-    setState('isMoveModeActive', !state.isMoveModeActive);
+    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+    const newMoveState = !state.isMoveModeActive;
+    setState('isMoveModeActive', newMoveState);
+    
+    // Se estiver DESATIVANDO o modo, limpa a pré-seleção
+    if (newMoveState === false) { 
+        setState('itemToPreselectOnMove', null);
+    }
+    
     renderFoldersAndCadernos();
+    // ===== FIM DA MODIFICAÇÃO =====
 }
 
 /**
@@ -648,6 +696,9 @@ export function toggleMoveMode() {
  */
 export function cancelMoveMode() {
     setState('isMoveModeActive', false);
+    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+    setState('itemToPreselectOnMove', null); // Limpa a pré-seleção
+    // ===== FIM DA MODIFICAÇÃO =====
     renderFoldersAndCadernos(); // Re-renderiza para esconder checkboxes e o rodapé
 }
 
