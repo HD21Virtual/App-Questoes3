@@ -2,14 +2,13 @@ import DOM from './dom-elements.js';
 // --- CORREÇÃO: Importar setState e clearSessionStats ---
 import { state, setState, clearSessionStats } from './state.js';
 // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
-// NOVO: Importar openSubfolderModal e closeSubfolderModal
+// Importações de "Mover" (modal) removidas
 import { 
     closeSaveModal, closeCadernoModal, closeNameModal, handleConfirmation, 
     openSaveModal, openCadernoModal, openNameModal, openLoadModal, closeLoadModal, 
     handleLoadModalEvents, updateSavedFiltersList, closeConfirmationModal, 
     closeStatsModal, openAuthModal, closeAuthModal, openSubfolderModal, 
-    closeSubfolderModal, openMoveModal, closeMoveModal, handleConfirmMove, 
-    populateMoveSubfolders 
+    closeSubfolderModal
 } from './ui/modal.js';
 // ===== FIM DA MODIFICAÇÃO =====
 // CORREÇÃO: Salvar o progresso ao sair da página
@@ -25,7 +24,15 @@ import { updateStatsPageUI, renderEstatisticasView, handleStatsFilter } from "./
 // ===== FIM DA MODIFICAÇÃO =====
 // CORREÇÃO: Importar handleGoogleAuth para corrigir o login com Google
 import { handleAuth, handleGoogleAuth } from './services/auth.js';
-import { handleAddQuestionsToCaderno, handleCadernoItemClick, handleFolderItemClick, handleBackToFolders, cancelAddQuestions, removeQuestionFromCaderno, addFilteredQuestionsToCaderno } from './features/caderno.js';
+// ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+// Importar novas funções do modo "Mover"
+import { 
+    handleAddQuestionsToCaderno, handleCadernoItemClick, handleFolderItemClick, 
+    handleBackToFolders, cancelAddQuestions, removeQuestionFromCaderno, 
+    addFilteredQuestionsToCaderno, toggleMoveMode, cancelMoveMode, 
+    handleMoveFooterFolderSelect, confirmMoveSelectedItems 
+} from './features/caderno.js';
+// ===== FIM DA MODIFICAÇÃO =====
 import { handleAssuntoListClick, handleMateriaListClick, handleBackToMaterias } from './features/materias.js';
 import { handleStartReview, handleSrsFeedback } from './features/srs.js';
 import { navigateQuestion, handleOptionSelect, checkAnswer, handleDiscardOption } from './features/question-viewer.js';
@@ -338,12 +345,9 @@ export function setupAllEventListeners() {
             if (DOM.statsPeriodoCustomRange) DOM.statsPeriodoCustomRange.classList.add('hidden');
         }
 
-        // ===== INÍCIO DA MODIFICAÇÃO: Fecha o modal de mover =====
-        if (DOM.moveModal && !target.closest('#move-modal') && !target.closest('.move-caderno-btn')) {
-            if (!DOM.moveModal.classList.contains('hidden')) {
-                closeMoveModal();
-            }
-        }
+        // ===== INÍCIO DA MODIFICAÇÃO: Clique fora do rodapé de mover =====
+        // Não fecha o modal de mover, pois ele não é um modal
+        // O cancelamento é feito pelo botão "Cancelar"
         // ===== FIM DA MODIFICAÇÃO =====
         
         
@@ -424,16 +428,17 @@ export function setupAllEventListeners() {
         
         else if (target.closest('#close-stats-modal')) closeStatsModal();
 
-        // ===== INÍCIO DA MODIFICAÇÃO: Listeners do Modal "Mover" =====
-        else if (target.closest('.move-caderno-btn')) {
-            openMoveModal(target.closest('.move-caderno-btn').dataset.id);
+        // ===== INÍCIO DA MODIFICAÇÃO: Listeners do Modo "Mover" =====
+        else if (target.closest('#toggle-move-mode-btn')) {
+            toggleMoveMode();
         }
-        else if (target.closest('#cancel-move-btn')) {
-            closeMoveModal();
+        else if (target.closest('#cancel-move-selected-btn')) {
+            cancelMoveMode();
         }
-        else if (target.closest('#confirm-move-btn')) {
-            await handleConfirmMove();
+        else if (target.closest('#confirm-move-selected-btn')) {
+            await confirmMoveSelectedItems();
         }
+        // O listener para 'move-caderno-btn' (o antigo) foi REMOVIDO.
         // ===== FIM DA MODIFICAÇÃO =====
 
 
@@ -946,8 +951,8 @@ export function setupAllEventListeners() {
         // ===== FIM DA MODIFICAÇÃO =====
 
         // ===== INÍCIO DA MODIFICAÇÃO: Listener para o select de Mover =====
-        if (target.id === 'move-folder-select') {
-            populateMoveSubfolders();
+        if (target.id === 'move-footer-folder-select') {
+            handleMoveFooterFolderSelect();
         }
         // ===== FIM DA MODIFICAÇÃO =====
     });
