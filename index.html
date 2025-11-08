@@ -627,6 +627,31 @@
         </div>
     </div>
 
+    <!-- ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) ===== -->
+    <!-- NOVO MODAL: Criar Subpasta (Baseado na Imagem) -->
+    <div id="subfolder-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
+        <div class="relative mx-auto bg-white w-full max-w-lg shadow-lg">
+            <!-- Título -->
+            <div class="px-6 py-4 border-b border-gray-300">
+                <h3 class="text-lg font-bold text-black">Criar subpasta</h3>
+            </div>
+            
+            <!-- Conteúdo -->
+            <div class="p-6">
+                <label for="subfolder-name-input" class="block text-md text-gray-800 mb-2">Digite o nome da subpasta</label>
+                <!-- Input com cantos vivos (rounded-none) e borda preta (border-black) -->
+                <input type="text" id="subfolder-name-input" class="w-full p-2 border border-black rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Ações (Botões) -->
+            <div class="flex justify-end space-x-6 px-6 py-4 bg-gray-50 border-t border-gray-300">
+                <button id="cancel-subfolder-btn" class="text-blue-600 font-medium hover:text-blue-800 text-sm">CANCELAR</button>
+                <button id="confirm-subfolder-btn" class="text-blue-600 font-medium hover:text-blue-800 text-sm">OK</button>
+            </div>
+        </div>
+    </div>
+    <!-- ===== FIM DA MODIFICAÇÃO ===== -->
+
     <!-- Modal de Confirmação -->
     <div id="confirmation-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
         <div class="relative mx-auto p-8 border w-full max-w-md shadow-lg rounded-xl bg-gray-50">
