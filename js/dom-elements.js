@@ -89,6 +89,13 @@ export function initDOM() {
     DOM.subfolderNameInput = document.getElementById('subfolder-name-input');
     DOM.confirmSubfolderBtn = document.getElementById('confirm-subfolder-btn');
     DOM.cancelSubfolderBtn = document.getElementById('cancel-subfolder-btn');
+
+    // NOVO: Move Modal
+    DOM.moveModal = document.getElementById('move-modal');
+    DOM.moveFolderSelect = document.getElementById('move-folder-select');
+    DOM.moveSubfolderSelect = document.getElementById('move-subfolder-select');
+    DOM.confirmMoveBtn = document.getElementById('confirm-move-btn');
+    DOM.cancelMoveBtn = document.getElementById('cancel-move-btn');
     // ===== FIM DA MODIFICAÇÃO =====
 
     // Confirmation Modal
