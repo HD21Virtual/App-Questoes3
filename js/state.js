@@ -39,6 +39,7 @@ let state = {
     // movingCadernoId removido, isMoveModeActive adicionado
     // movingCadernoId: null, // <-- REMOVIDO
     isMoveModeActive: false, // <-- ADICIONADO
+    itemToPreselectOnMove: null, // <-- ADICIONADO: Armazena o item a ser pré-selecionado
     // ===== FIM DA MODIFICAÇÃO =====
     unsubscribes: []
 };
@@ -85,6 +86,7 @@ export function resetStateOnLogout() {
         sessionStats: [],
         // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
         isMoveModeActive: false, // Reseta o modo de mover ao deslogar
+        itemToPreselectOnMove: null, // <-- ADICIONADO
         // ===== FIM DA MODIFICAÇÃO =====
     };
 }
