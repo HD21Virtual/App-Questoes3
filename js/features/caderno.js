@@ -233,6 +233,8 @@ export async function renderFoldersAndCadernos() {
         const folder = state.userFolders.find(f => f.id === state.currentFolderId);
         if (folder) {
             const count = state.userCadernos.filter(c => c.folderId === folder.id).length;
+            // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+            // Adicionado ID ao botão de menu, classe 'relative' ao container e o HTML do dropdown
             const cardHtml = `
             <div class="bg-white rounded-lg shadow-sm p-4 mb-4 border-b border-gray-200">
                 <div class="flex justify-between items-center">
@@ -250,12 +252,19 @@ export async function renderFoldersAndCadernos() {
                         </div>
                     </div>
                     <!-- Lado Direito: Contagem e Menu -->
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-3 relative"> <!-- Adicionado 'relative' -->
                         <span class="text-sm text-gray-500">${count} cadernos</span>
-                        <button class="text-gray-400 hover:text-gray-600 p-1 rounded-full">
-                            <i class="fas fa-ellipsis-h"></i>
+                        <button id="folder-info-menu-btn" data-folder-id="${folder.id}" class="text-gray-400 hover:text-gray-600 p-1 rounded-full">
+                            <i class="fas fa-ellipsis-h pointer-events-none"></i>
                         </button>
+                        <!-- Dropdown Panel -->
+                        <div id="folder-info-menu-dropdown-${folder.id}" class="folder-info-menu-dropdown hidden absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 create-subfolder-btn" data-folder-id="${folder.id}">
+                                <i class="fas fa-folder-plus w-5 mr-2 text-gray-500"></i>Criar Subpasta
+                            </a>
+                        </div>
                     </div>
+                    <!-- ===== FIM DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) ===== -->
                 </div>
             </div>
             `;
