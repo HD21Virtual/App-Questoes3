@@ -289,6 +289,15 @@ export function setupAllEventListeners() {
                 d.classList.add('hidden');
             });
         }
+        
+        // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+        // Esconde o novo menu de info da pasta se o clique for fora
+        if (!target.closest('.folder-info-menu-dropdown') && !target.closest('#folder-info-menu-btn')) {
+            document.querySelectorAll('.folder-info-menu-dropdown').forEach(d => {
+                d.classList.add('hidden');
+            });
+        }
+        // ===== FIM DA MODIFICAÇÃO =====
 
         // Esconde o menu mobile se o clique for fora dele
         if (!target.closest('#mobile-menu') && !target.closest('#hamburger-btn')) {
@@ -323,7 +332,7 @@ export function setupAllEventListeners() {
             
             if (dropdown) {
                 // Esconde todos os outros dropdowns abertos
-                document.querySelectorAll('.caderno-menu-dropdown').forEach(d => {
+                document.querySelectorAll('.caderno-menu-dropdown, .folder-info-menu-dropdown').forEach(d => {
                     if (d.id !== dropdown.id) {
                         d.classList.add('hidden');
                     }
@@ -412,6 +421,33 @@ export function setupAllEventListeners() {
             if(DOM.confirmationModal) DOM.confirmationModal.classList.remove('hidden');
         }
         // ===== FIM DA MODIFICAÇÃO =====
+        
+        // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+        // Lógica para o novo menu de info da pasta
+        else if (target.closest('#folder-info-menu-btn')) {
+            const button = target.closest('#folder-info-menu-btn');
+            const folderId = button.dataset.folderId;
+            const dropdown = document.getElementById(`folder-info-menu-dropdown-${folderId}`);
+            if (dropdown) {
+                // Esconde outros dropdowns
+                document.querySelectorAll('.caderno-menu-dropdown, .folder-info-menu-dropdown').forEach(d => {
+                    if (d.id !== dropdown.id) d.classList.add('hidden');
+                });
+                dropdown.classList.toggle('hidden');
+            }
+        }
+        else if (target.closest('.create-subfolder-btn')) {
+            event.preventDefault();
+            // Abre o modal de criação de pasta.
+            // Nota: O app atualmente só cria pastas na raiz.
+            openNameModal('folder');
+            
+            // Esconde o dropdown
+            const dropdown = target.closest('.folder-info-menu-dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+        }
+        // ===== FIM DA MODIFICAÇÃO =====
+
         else if (target.closest('#saved-cadernos-list-container')) {
             handleCadernoItemClick(event);
             handleFolderItemClick(event);
