@@ -250,12 +250,13 @@ function renderRootCadernosView() {
 
     // 3. Renderiza pastas raiz, cada uma com seus cadernos filhos
     sortedFolders.forEach(folder => {
+        // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
         html += `
         <div class="bg-white rounded-lg shadow-sm mb-2 folder-item-container" data-folder-id="${folder.id}">
             <div class="folder-item flex justify-between items-center p-4 hover:bg-gray-50 transition" data-folder-id="${folder.id}">
                 <div class="flex items-center cursor-pointer flex-grow" data-action="open" style="min-width: 0;">
-                    <!-- Ícone de expandir -->
-                    <i class="fas fa-chevron-right toggle-folder-contents text-gray-400 w-4 text-center mr-2 cursor-pointer transition-transform duration-200"></i>
+                    <!-- Ícone de expandir removido e substituído por placeholder -->
+                    <span class="w-4 mr-2"></span> <!-- Placeholder for alignment -->
                     <i class="fas fa-folder-open text-yellow-500 text-2xl mr-4"></i>
                     <div>
                         <span class="font-bold text-lg">${folder.name}</span>
@@ -271,16 +272,8 @@ function renderRootCadernosView() {
             </div>
         </div>`;
         
-        // Renderiza os cadernos filhos desta pasta (inicialmente ocultos)
-        const notebooksInside = state.userCadernos
-            .filter(c => c.folderId === folder.id)
-            .sort(naturalSort);
-        
-        notebooksInside.forEach(caderno => {
-            html += `<div class="hidden notebook-child-of-${folder.id} bg-white">`; // Adicionado bg-white
-            html += getCadernoRowHtml(caderno, true); // true = isSubItem
-            html += `</div>`;
-        });
+        // Bloco que renderizava os cadernos filhos foi REMOVIDO
+        // ===== FIM DA MODIFICAÇÃO =====
     });
 
     // 4. Renderiza cadernos sem pasta
@@ -377,7 +370,8 @@ export function handleFolderItemClick(event) {
     // ===== FIM DA MODIFICAÇÃO =====
     if (!folderItem) return;
 
-    // ===== INÍCIO DA MODIFICAÇÃO: Ignora clique no ícone de expandir =====
+    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+    // Ignora clique no ícone de expandir (seja na raiz ou subpasta)
     if (event.target.closest('.toggle-folder-contents')) {
         return;
     }
