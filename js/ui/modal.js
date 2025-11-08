@@ -83,6 +83,24 @@ export function closeNameModal() {
     setState('editingType', null);
 }
 
+// ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+// NOVO: Funções do Modal de Subpasta
+export function openSubfolderModal() {
+    if (!state.currentUser) { 
+        showInfoModal("Acesso Negado", "Por favor, faça login para criar subpastas."); 
+        return; 
+    }
+    if (DOM.subfolderNameInput) DOM.subfolderNameInput.value = '';
+    if (DOM.subfolderModal) DOM.subfolderModal.classList.remove('hidden');
+    if (DOM.subfolderNameInput) DOM.subfolderNameInput.focus();
+}
+
+export function closeSubfolderModal() {
+    if (DOM.subfolderModal) DOM.subfolderModal.classList.add('hidden');
+    if (DOM.subfolderNameInput) DOM.subfolderNameInput.value = '';
+}
+// ===== FIM DA MODIFICAÇÃO =====
+
 export function closeConfirmationModal() {
     if (DOM.confirmationModal) DOM.confirmationModal.classList.add('hidden');
     setState('deletingId', null);
