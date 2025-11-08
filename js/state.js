@@ -35,6 +35,7 @@ let state = {
     },
     savedFilters: [],
     selectedMateria: null,
+    movingCadernoId: null, // <-- ADICIONADO PARA O MODAL "MOVER"
     unsubscribes: []
 };
 
