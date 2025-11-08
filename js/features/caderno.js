@@ -55,7 +55,87 @@ async function renderCadernoContentView() {
     await displayQuestion();
 }
 
-// Renders the view when inside a specific folder, showing the notebooks within it.
+// ===== INÍCIO DA MODIFICAÇÃO: Lógica de renderização hierárquica =====
+
+// Helper para renderizar uma linha de caderno (usado em ambas as views)
+function getCadernoRowHtml(caderno, isSubItem = false) {
+    const indentation = isSubItem ? 'pl-10' : ''; // pl-10 = pl-4 (icon) + pl-6 (text)
+    return `
+    <div class="caderno-item flex justify-between items-center p-3 hover:bg-gray-50 ${indentation}" data-caderno-id="${caderno.id}">
+        <!-- Left: Icon + Name (clickable to open) -->
+        <div class="flex items-center flex-grow cursor-pointer" data-action="open" style="min-width: 0;"> <!-- min-width: 0 para truncamento -->
+            <i class="far fa-file-alt text-blue-500 text-lg w-6 text-center mr-3 sm:mr-4"></i>
+            <span class="font-medium text-gray-800 truncate" title="${caderno.name}">${caderno.name}</span>
+        </div>
+        
+        <!-- Middle: Question Count -->
+        <div class="flex-shrink-0 mx-4">
+            <span class="text-sm text-gray-500 whitespace-nowrap">${caderno.questionIds ? caderno.questionIds.length : 0} questões</span>
+        </div>
+
+        <!-- Right: Menu -->
+        <div class="relative flex-shrink-0">
+            <button class="caderno-menu-btn p-2 rounded-full text-gray-500 hover:bg-gray-200" data-caderno-id="${caderno.id}">
+                <i class="fas fa-ellipsis-v pointer-events-none"></i>
+            </button>
+            <!-- Dropdown Panel -->
+            <div id="menu-dropdown-${caderno.id}" class="caderno-menu-dropdown hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 stats-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-chart-bar w-5 mr-2 text-gray-500"></i>Desempenho</a>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 edit-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-pencil-alt w-5 mr-2 text-gray-500"></i>Renomear</a>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 move-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-share w-5 mr-2 text-gray-500"></i>Mover</a>
+                <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 delete-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-trash-alt w-5 mr-2"></i>Excluir</a>
+            </div>
+        </div>
+    </div>`;
+}
+
+// Helper para renderizar uma linha de pasta (usado em ambas as views)
+function getFolderRowHtml(folder, isSubfolder = false) {
+    const folderCadernosCount = state.userCadernos.filter(c => c.folderId === folder.id).length;
+    const folderSubfoldersCount = state.userFolders.filter(f => f.parentId === folder.id).length;
+    const indentation = isSubfolder ? 'pl-4' : ''; // Subpastas têm um leve recuo
+
+    let countText = '';
+    if (folderSubfoldersCount > 0 && folderCadernosCount > 0) {
+        countText = `${folderSubfoldersCount} subpasta(s), ${folderCadernosCount} caderno(s)`;
+    } else if (folderSubfoldersCount > 0) {
+        countText = `${folderSubfoldersCount} subpasta(s)`;
+    } else {
+        countText = `${folderCadernosCount} caderno(s)`;
+    }
+
+    const iconClass = isSubfolder ? 'fa-folder text-gray-600' : 'fa-folder-open text-yellow-500';
+    const iconSize = isSubfolder ? 'text-lg' : 'text-2xl';
+
+    return `
+    <div class="folder-item flex justify-between items-center p-3 hover:bg-gray-50" data-folder-id="${folder.id}">
+        <!-- Left: Icon + Name (clickable to open) -->
+        <div class="flex items-center flex-grow cursor-pointer" data-action="open" style="min-width: 0;">
+            <i class="fas ${iconClass} ${iconSize} w-6 text-center mr-3 sm:mr-4"></i>
+            <span class="font-medium text-gray-800 truncate" title="${folder.name}">${folder.name}</span>
+        </div>
+        
+        <!-- Middle: Content Count -->
+        <div class="flex-shrink-0 mx-4">
+            <span class="text-sm text-gray-500 whitespace-nowrap">${countText}</span>
+        </div>
+
+        <!-- Right: Menu -->
+        <div class="relative flex-shrink-0">
+            <button class="folder-menu-btn p-2 rounded-full text-gray-500 hover:bg-gray-200" data-folder-id="${folder.id}">
+                <i class="fas fa-ellipsis-v pointer-events-none"></i>
+            </button>
+            <!-- Dropdown Panel for Subfolder -->
+            <div id="menu-dropdown-folder-${folder.id}" class="caderno-menu-dropdown hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 stats-folder-btn" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-chart-bar w-5 mr-2 text-gray-500"></i>Desempenho</a>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 edit-folder-btn" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-pencil-alt w-5 mr-2 text-gray-500"></i>Renomear</a>
+                <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 delete-folder-btn" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-trash-alt w-5 mr-2"></i>Excluir</a>
+            </div>
+        </div>
+    </div>`;
+}
+
+// Renders the view when inside a specific folder, showing subfolders and notebooks hierarchically.
 function renderFolderContentView() {
     const folder = state.userFolders.find(f => f.id === state.currentFolderId);
     if (!folder) { 
@@ -64,124 +144,83 @@ function renderFolderContentView() {
         return; 
     }
 
-    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
-    // A linha abaixo foi comentada para remover o título da pasta da barra de ações.
-    // DOM.cadernosViewTitle.textContent = folder.name;
-    // ===== FIM DA MODIFICAÇÃO =====
     DOM.backToFoldersBtn.classList.remove('hidden');
     DOM.addCadernoToFolderBtn.classList.remove('hidden');
     DOM.createFolderBtn.classList.add('hidden');
     DOM.addQuestionsToCadernoBtn.classList.add('hidden');
 
-    // ===== INÍCIO DA MODIFICAÇÃO: Combina, ordena e renderiza subpastas e cadernos =====
-    
-    // 1. Get Subfolders e mapeia para um formato comum
+    // 1. Get Subfolders
     const subfolders = state.userFolders
         .filter(f => f.parentId === state.currentFolderId)
-        .map(f => ({
-            id: f.id,
-            name: f.name,
-            type: 'folder',
-            data: f
-        }));
+        .sort(naturalSort);
 
-    // 2. Get Cadernos e mapeia para um formato comum
-    const cadernosInFolder = state.userCadernos
+    // 2. Get Cadernos nesta pasta
+    const cadernosInThisFolder = state.userCadernos
         .filter(c => c.folderId === state.currentFolderId)
-        .map(c => ({
-            id: c.id,
-            name: c.name,
-            type: 'caderno',
-            data: c
-        }));
+        .sort(naturalSort);
     
-    // 3. Combina e Ordena Alfanumericamente
-    const combinedItems = [...subfolders, ...cadernosInFolder];
-    combinedItems.sort((a, b) => naturalSort(a.name, b.name));
-
     let html = '';
 
-    // 4. Renderiza os itens combinados
-    if (combinedItems.length > 0) {
-        // Adiciona um único wrapper para todos os itens (estilo do caderno)
-        html += '<div class="bg-white rounded-lg shadow-sm">';
-        
-        combinedItems.forEach(item => {
-            if (item.type === 'folder') {
-                // HTML para Subpasta (estilo do caderno)
-                const folder = item.data;
-                const folderCadernosCount = state.userCadernos.filter(c => c.folderId === folder.id).length;
-                html += `
-                <div class="folder-item flex justify-between items-center p-3 hover:bg-gray-50" data-folder-id="${folder.id}">
-                    <!-- Left: Icon + Name (clickable to open) -->
-                    <div class="flex items-center flex-grow cursor-pointer" data-action="open" style="min-width: 0;">
-                        <!-- Ícone de pasta (cinza, conforme imagem) -->
-                        <i class="fas fa-folder text-gray-600 text-lg w-6 text-center mr-3 sm:mr-4"></i>
-                        <span class="font-medium text-gray-800 truncate" title="${folder.name}">${folder.name}</span>
-                    </div>
-                    
-                    <!-- Middle: Question Count -->
-                    <div class="flex-shrink-0 mx-4">
-                        <span class="text-sm text-gray-500 whitespace-nowrap">${folderCadernosCount} caderno(s)</span>
-                    </div>
-
-                    <!-- Right: Menu -->
-                    <div class="relative flex-shrink-0">
-                        <button class="folder-menu-btn p-2 rounded-full text-gray-500 hover:bg-gray-200" data-folder-id="${folder.id}">
-                            <i class="fas fa-ellipsis-v pointer-events-none"></i>
-                        </button>
-                        <!-- Dropdown Panel for Subfolder -->
-                        <div id="menu-dropdown-folder-${folder.id}" class="caderno-menu-dropdown hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 stats-folder-btn" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-chart-bar w-5 mr-2 text-gray-500"></i>Desempenho</a>
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 edit-folder-btn" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-pencil-alt w-5 mr-2 text-gray-500"></i>Renomear</a>
-                            <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 delete-folder-btn" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-trash-alt w-5 mr-2"></i>Excluir</a>
-                        </div>
-                    </div>
-                </div>`;
-
-            } else if (item.type === 'caderno') {
-                // HTML para Caderno
-                const caderno = item.data;
-                html += `
-                <div class="caderno-item flex justify-between items-center p-3 hover:bg-gray-50" data-caderno-id="${caderno.id}">
-                    <!-- Left: Icon + Name (clickable to open) -->
-                    <div class="flex items-center flex-grow cursor-pointer" data-action="open" style="min-width: 0;"> <!-- min-width: 0 para truncamento -->
-                        <i class="far fa-file-alt text-blue-500 text-lg w-6 text-center mr-3 sm:mr-4"></i>
-                        <span class="font-medium text-gray-800 truncate" title="${caderno.name}">${caderno.name}</span>
-                    </div>
-                    
-                    <!-- Middle: Question Count -->
-                    <div class="flex-shrink-0 mx-4">
-                        <span class="text-sm text-gray-500 whitespace-nowrap">${caderno.questionIds ? caderno.questionIds.length : 0} questões</span>
-                    </div>
-
-                    <!-- Right: Menu -->
-                    <div class="relative flex-shrink-0">
-                        <button class="caderno-menu-btn p-2 rounded-full text-gray-500 hover:bg-gray-200" data-caderno-id="${caderno.id}">
-                            <i class="fas fa-ellipsis-v pointer-events-none"></i>
-                        </button>
-                        <!-- Dropdown Panel -->
-                        <div id="menu-dropdown-${caderno.id}" class="caderno-menu-dropdown hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 stats-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-chart-bar w-5 mr-2 text-gray-500"></i>Desempenho</a>
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 edit-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-pencil-alt w-5 mr-2 text-gray-500"></i>Renomear</a>
-                            <!-- INÍCIO DA MODIFICAÇÃO: Adicionada opção "Mover" -->
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 move-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-share w-5 mr-2 text-gray-500"></i>Mover</a>
-                            <!-- FIM DA MODIFICAÇÃO -->
-                            <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 delete-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-trash-alt w-5 mr-2"></i>Excluir</a>
-                        </div>
-                    </div>
-                </div>`;
-            }
-        });
-        
-        html += '</div>'; // Fecha o wrapper
-        DOM.savedCadernosListContainer.innerHTML = html;
-
-    } else {
-        // 5. Mensagem de "vazio"
+    if (subfolders.length === 0 && cadernosInThisFolder.length === 0) {
         DOM.savedCadernosListContainer.innerHTML = '<p class="text-center text-gray-500 bg-white p-6 rounded-lg shadow-sm">Nenhum caderno ou subpasta aqui. Clique em "Adicionar Caderno" ou use o menu para criar uma subpasta.</p>';
+        return;
     }
-    // ===== FIM DA MODIFICAÇÃO =====
+    
+    html += '<div class="bg-white rounded-lg shadow-sm">';
+
+    // 3. Renderiza Subpastas primeiro, cada uma com seus cadernos filhos
+    subfolders.forEach(subfolder => {
+        // Renderiza a linha da subpasta
+        html += `
+        <div class="folder-item-container" data-folder-id="${subfolder.id}">
+            <div class="folder-item flex justify-between items-center p-3 hover:bg-gray-50" data-folder-id="${subfolder.id}">
+                <!-- Left: Icon + Name (clickable to open) -->
+                <div class="flex items-center flex-grow cursor-pointer" data-action="open" style="min-width: 0;">
+                    <!-- Ícone de expandir -->
+                    <i class="fas fa-chevron-right toggle-folder-contents text-gray-400 w-4 text-center mr-2 cursor-pointer transition-transform duration-200"></i>
+                    <i class="fas fa-folder text-gray-600 text-lg w-6 text-center mr-3 sm:mr-4"></i>
+                    <span class="font-medium text-gray-800 truncate" title="${subfolder.name}">${subfolder.name}</span>
+                </div>
+                
+                <!-- Middle: Question Count -->
+                <div class="flex-shrink-0 mx-4">
+                    <span class="text-sm text-gray-500 whitespace-nowrap">${state.userCadernos.filter(c => c.folderId === subfolder.id).length} caderno(s)</span>
+                </div>
+
+                <!-- Right: Menu -->
+                <div class="relative flex-shrink-0">
+                    <button class="folder-menu-btn p-2 rounded-full text-gray-500 hover:bg-gray-200" data-folder-id="${subfolder.id}">
+                        <i class="fas fa-ellipsis-v pointer-events-none"></i>
+                    </button>
+                    <!-- Dropdown Panel for Subfolder -->
+                    <div id="menu-dropdown-folder-${subfolder.id}" class="caderno-menu-dropdown hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 stats-folder-btn" data-id="${subfolder.id}" data-name="${subfolder.name}"><i class="fas fa-chart-bar w-5 mr-2 text-gray-500"></i>Desempenho</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 edit-folder-btn" data-id="${subfolder.id}" data-name="${subfolder.name}"><i class="fas fa-pencil-alt w-5 mr-2 text-gray-500"></i>Renomear</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 delete-folder-btn" data-id="${subfolder.id}" data-name="${subfolder.name}"><i class="fas fa-trash-alt w-5 mr-2"></i>Excluir</a>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        // Renderiza os cadernos filhos desta subpasta (inicialmente ocultos)
+        const notebooksInside = state.userCadernos
+            .filter(c => c.folderId === subfolder.id)
+            .sort(naturalSort);
+        
+        notebooksInside.forEach(caderno => {
+            html += `<div class="hidden notebook-child-of-${subfolder.id}">`;
+            html += getCadernoRowHtml(caderno, true); // true = isSubItem
+            html += `</div>`;
+        });
+    });
+
+    // 4. Renderiza cadernos que estão diretamente nesta pasta (não em subpastas)
+    cadernosInThisFolder.forEach(caderno => {
+        html += getCadernoRowHtml(caderno, false); // false = not a subItem
+    });
+
+    html += '</div>'; // Fecha o wrapper
+    DOM.savedCadernosListContainer.innerHTML = html;
 }
 
 // Renders the root view of the "Cadernos" tab, showing all folders and unfiled notebooks.
@@ -192,17 +231,15 @@ function renderRootCadernosView() {
     DOM.createFolderBtn.classList.remove('hidden');
     DOM.addQuestionsToCadernoBtn.classList.add('hidden');
 
-    // --- MUDANÇA: Ordenação natural dos cadernos sem pasta ---
+    // 1. Get Cadernos sem pasta
     const unfiledCadernos = state.userCadernos
         .filter(c => !c.folderId)
         .sort((a, b) => naturalSort(a.name, b.name));
-    // --- FIM DA MUDANÇA ---
 
-    // ===== INÍCIO DA MODIFICAÇÃO: Filtra para mostrar apenas pastas raiz =====
+    // 2. Get Pastas Raiz
     const sortedFolders = state.userFolders
         .filter(f => !f.parentId) // Apenas pastas que NÃO têm parentId
-        .sort((a, b) => naturalSort(a.name, b.name)); // Modificado para ordenação natural
-    // ===== FIM DA MODIFICAÇÃO =====
+        .sort((a, b) => naturalSort(a.name, b.name));
 
     if (sortedFolders.length === 0 && unfiledCadernos.length === 0) {
         DOM.savedCadernosListContainer.innerHTML = '<p class="text-center text-gray-500 bg-white p-6 rounded-lg shadow-sm">Nenhum caderno ou pasta criada ainda.</p>';
@@ -211,77 +248,56 @@ function renderRootCadernosView() {
     
     let html = '';
 
-    // Render folders (mantendo ordenação natural)
+    // 3. Renderiza pastas raiz, cada uma com seus cadernos filhos
     sortedFolders.forEach(folder => {
-        const folderCadernosCount = state.userCadernos.filter(c => c.folderId === folder.id).length;
         html += `
-            <div class="bg-white rounded-lg shadow-sm p-4 hover:bg-gray-50 transition folder-item mb-2" data-folder-id="${folder.id}">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center cursor-pointer flex-grow" data-action="open" style="min-width: 0;"> <!-- min-width: 0 para truncamento -->
-                        <i class="fas fa-folder-open text-yellow-500 text-2xl mr-4"></i>
-                        <div>
-                            <span class="font-bold text-lg">${folder.name}</span>
-                            <p class="text-sm text-gray-500">${folderCadernosCount} caderno(s)</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-1">
-                         <button class="stats-folder-btn text-gray-400 hover:text-blue-600 p-2 rounded-full" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-chart-bar pointer-events-none"></i></button>
-                         <button class="edit-folder-btn text-gray-400 hover:text-blue-600 p-2 rounded-full" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-pencil-alt pointer-events-none"></i></button>
-                         <button class="delete-folder-btn text-gray-400 hover:text-red-600 p-2 rounded-full" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-trash-alt pointer-events-none"></i></button>
-                         <i class="fas fa-chevron-right text-gray-400 ml-2"></i>
+        <div class="bg-white rounded-lg shadow-sm mb-2 folder-item-container" data-folder-id="${folder.id}">
+            <div class="folder-item flex justify-between items-center p-4 hover:bg-gray-50 transition" data-folder-id="${folder.id}">
+                <div class="flex items-center cursor-pointer flex-grow" data-action="open" style="min-width: 0;">
+                    <!-- Ícone de expandir -->
+                    <i class="fas fa-chevron-right toggle-folder-contents text-gray-400 w-4 text-center mr-2 cursor-pointer transition-transform duration-200"></i>
+                    <i class="fas fa-folder-open text-yellow-500 text-2xl mr-4"></i>
+                    <div>
+                        <span class="font-bold text-lg">${folder.name}</span>
+                        <p class="text-sm text-gray-500">${state.userCadernos.filter(c => c.folderId === folder.id).length} caderno(s)</p>
                     </div>
                 </div>
-            </div>`;
+                <div class="flex items-center space-x-1">
+                     <button class="stats-folder-btn text-gray-400 hover:text-blue-600 p-2 rounded-full" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-chart-bar pointer-events-none"></i></button>
+                     <button class="edit-folder-btn text-gray-400 hover:text-blue-600 p-2 rounded-full" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-pencil-alt pointer-events-none"></i></button>
+                     <button class="delete-folder-btn text-gray-400 hover:text-red-600 p-2 rounded-full" data-id="${folder.id}" data-name="${folder.name}"><i class="fas fa-trash-alt pointer-events-none"></i></button>
+                     <i class="fas fa-chevron-right text-gray-400 ml-2" data-action="open"></i>
+                </div>
+            </div>
+        </div>`;
+        
+        // Renderiza os cadernos filhos desta pasta (inicialmente ocultos)
+        const notebooksInside = state.userCadernos
+            .filter(c => c.folderId === folder.id)
+            .sort(naturalSort);
+        
+        notebooksInside.forEach(caderno => {
+            html += `<div class="hidden notebook-child-of-${folder.id} bg-white">`; // Adicionado bg-white
+            html += getCadernoRowHtml(caderno, true); // true = isSubItem
+            html += `</div>`;
+        });
     });
 
-    // Render unfiled cadernos (com ordenação natural)
+    // 4. Renderiza cadernos sem pasta
     if (unfiledCadernos.length > 0) {
         if (sortedFolders.length > 0) { 
             html += '<h3 class="mt-6 mb-2 text-md font-semibold text-gray-600">Cadernos sem Pasta</h3>'; 
         }
         
-        // --- MODIFICAÇÃO: Wrapper para o layout de lista ---
         html += '<div class="bg-white rounded-lg shadow-sm">';
-
-        unfiledCadernos.forEach((caderno, index) => {
-            const isLast = index === unfiledCadernos.length - 1;
-            // --- MODIFICAÇÃO: HTML do item do caderno para layout de lista (removida a borda) ---
-            html += `
-                <div class="caderno-item flex justify-between items-center p-3 hover:bg-gray-50" data-caderno-id="${caderno.id}">
-                    <!-- Left: Icon + Name (clickable to open) -->
-                    <div class="flex items-center flex-grow cursor-pointer" data-action="open" style="min-width: 0;"> <!-- min-width: 0 para truncamento -->
-                        <i class="far fa-file-alt text-blue-500 text-lg w-6 text-center mr-3 sm:mr-4"></i>
-                        <span class="font-medium text-gray-800 truncate" title="${caderno.name}">${caderno.name}</span>
-                    </div>
-                    
-                    <!-- Middle: Question Count -->
-                    <div class="flex-shrink-0 mx-4">
-                        <span class="text-sm text-gray-500 whitespace-nowrap">${caderno.questionIds ? caderno.questionIds.length : 0} questões</span>
-                    </div>
-
-                    <!-- Right: Menu -->
-                    <div class="relative flex-shrink-0">
-                        <button class="caderno-menu-btn p-2 rounded-full text-gray-500 hover:bg-gray-200" data-caderno-id="${caderno.id}">
-                            <i class="fas fa-ellipsis-v pointer-events-none"></i>
-                        </button>
-                        <!-- Dropdown Panel -->
-                        <div id="menu-dropdown-${caderno.id}" class="caderno-menu-dropdown hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 stats-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-chart-bar w-5 mr-2 text-gray-500"></i>Desempenho</a>
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 edit-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-pencil-alt w-5 mr-2 text-gray-500"></i>Renomear</a>
-                            <!-- INÍCIO DA MODIFICAÇÃO: Adicionada opção "Mover" -->
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 move-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-share w-5 mr-2 text-gray-500"></i>Mover</a>
-                            <!-- FIM DA MODIFICAÇÃO -->
-                            <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 delete-caderno-btn" data-id="${caderno.id}" data-name="${caderno.name}"><i class="fas fa-trash-alt w-5 mr-2"></i>Excluir</a>
-                        </div>
-                    </div>
-                </div>`;
-            // --- FIM DA MODIFICAÇÃO ---
+        unfiledCadernos.forEach(caderno => {
+            html += getCadernoRowHtml(caderno, false); // false = not a subItem
         });
-        
-        html += '</div>'; // --- FIM do wrapper
+        html += '</div>';
     }
     DOM.savedCadernosListContainer.innerHTML = html;
 }
+// ===== FIM DA MODIFICAÇÃO =====
 
 
 // Main function to control the rendering of the "Cadernos" tab view.
@@ -360,6 +376,12 @@ export function handleFolderItemClick(event) {
     const folderItem = event.target.closest('.folder-item, .bg-white[data-folder-id]');
     // ===== FIM DA MODIFICAÇÃO =====
     if (!folderItem) return;
+
+    // ===== INÍCIO DA MODIFICAÇÃO: Ignora clique no ícone de expandir =====
+    if (event.target.closest('.toggle-folder-contents')) {
+        return;
+    }
+    // ===== FIM DA MODIFICAÇÃO =====
 
     const folderId = folderItem.dataset.folderId;
     const folder = state.userFolders.find(f => f.id === folderId);
