@@ -605,9 +605,13 @@ export async function addFilteredQuestionsToCaderno() {
 
     // Only get IDs of questions not already in the notebook
     const existingIds = new Set(caderno.questionIds || []);
+    
+    // ===== INÍCIO DA CORREÇÃO =====
+    // Havia um erro de digitação: .ind virou .filter
     const newQuestionIds = state.filteredQuestions
         .map(q => q.id)
-        ind(id => !existingIds.has(id));
+        .filter(id => !existingIds.has(id));
+    // ===== FIM DA CORREÇÃO =====
 
     if (newQuestionIds.length > 0) {
         await addQuestionIdsToFirestore(cadernoId, newQuestionIds);
