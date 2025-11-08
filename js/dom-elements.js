@@ -46,7 +46,7 @@ export function initDOM() {
     DOM.addQuestionsBannerText = document.getElementById('add-questions-banner-text');
     // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
     // NOVO: Referências para o modo "Mover"
-    DOM.toggleMoveModeBtn = document.getElementById('toggle-move-mode-btn');
+    // DOM.toggleMoveModeBtn = document.getElementById('toggle-move-mode-btn'); // REMOVIDO
     DOM.cadernosMoveFooter = document.getElementById('cadernos-move-footer');
     DOM.moveFooterFolderSelect = document.getElementById('move-footer-folder-select');
     DOM.moveFooterSubfolderSelect = document.getElementById('move-footer-subfolder-select');
