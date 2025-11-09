@@ -710,7 +710,7 @@ export function cancelMoveMode() {
 export function populateMoveFooterDropdowns() {
     // 1. Popula o select de Pastas Raiz
     if (DOM.moveFooterFolderSelect) {
-        
+        DOM.moveFooterFolderSelect.innerHTML = '<option value="">-- Raiz --</option>'; // Opção para mover para a raiz
         
         // Filtra apenas pastas raiz (sem parentId) e ordena
         const rootFolders = state.userFolders
@@ -853,4 +853,3 @@ export async function confirmMoveSelectedItems() {
     cancelMoveMode(); // Sai do modo de mover e re-renderiza
 }
 // ===== FIM DA MODIFICAÇÃO =====
-
