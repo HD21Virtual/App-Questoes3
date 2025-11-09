@@ -710,7 +710,10 @@ export function cancelMoveMode() {
 export function populateMoveFooterDropdowns() {
     // 1. Popula o select de Pastas Raiz
     if (DOM.moveFooterFolderSelect) {
-        DOM.moveFooterFolderSelect.innerHTML = '<option value="">-- Raiz --</option>'; // Opção para mover para a raiz
+        // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+        // DOM.moveFooterFolderSelect.innerHTML = '<option value="">-- Raiz --</option>'; // Opção para mover para a raiz
+        DOM.moveFooterFolderSelect.innerHTML = ''; // Remove a opção "-- Raiz --"
+        // ===== FIM DA MODIFICAÇÃO =====
         
         // Filtra apenas pastas raiz (sem parentId) e ordena
         const rootFolders = state.userFolders
@@ -806,8 +809,13 @@ export async function confirmMoveSelectedItems() {
     const folderId = DOM.moveFooterFolderSelect.value;
 
     // A pasta de destino é a subpasta (se selecionada) ou a pasta raiz (se selecionada).
-    // Se "Raiz" (folderId = "") for selecionada, targetFolderId será null.
+    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+    // Se folderId for "" (o que não deve acontecer se a lista não estiver vazia)
+    // ou subfolderId for selecionado, ele assume.
+    // Se o usuário não selecionar nada e a lista tiver pastas, a 1ª pasta será o destino.
+    // A opção de mover para a raiz (null) foi removida.
     const targetFolderId = subfolderId || folderId || null;
+    // ===== FIM DA MODIFICAÇÃO =====
 
     // Coleta os itens selecionados
     const selectedItems = DOM.savedCadernosListContainer.querySelectorAll('.move-item-checkbox:checked');
