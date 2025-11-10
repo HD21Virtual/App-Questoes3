@@ -40,7 +40,7 @@ export async function navigateToView(viewId, isUserClick = true) {
         targetView.classList.remove('hidden');
     }
 
-    // NEW LOGIC for navigation links
+    // MODIFICADO: Lógica de links de navegação
     document.querySelectorAll('.nav-link').forEach(navLink => {
         navLink.classList.remove('active-nav');
     });
@@ -106,8 +106,8 @@ export async function navigateToView(viewId, isUserClick = true) {
         // ===== FIM DA MODIFICAÇÃO =====
     }
 
-
-    if (DOM.mobileMenu) {
-        DOM.mobileMenu.classList.add('hidden');
+    // MODIFICADO: Fecha a nova sidebar no mobile
+    if (DOM.sidebarNav && document.body.classList.contains('sidebar-open-mobile')) {
+        document.body.classList.remove('sidebar-open-mobile');
     }
 }
