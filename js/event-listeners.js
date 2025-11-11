@@ -43,6 +43,9 @@ import { applyFilters, clearAllFilters, removeFilter, setupCustomSelect } from '
 // ===== FIM DA MODIFICAÇÃO =====
 import { navigateToView } from './ui/navigation.js';
 import { updateSelectedFiltersDisplay } from './ui/ui-helpers.js';
+// ===== INÍCIO DA MODIFICAÇÃO: Importar funções de redimensionamento de gráficos =====
+import { resizeHomeCharts, resizeStatsCharts } from './ui/charts.js';
+// ===== FIM DA MODIFICAÇÃO =====
 
 // Handlers
 const handleSaveFilter = async () => {
@@ -309,6 +312,22 @@ export function setupAllEventListeners() {
             }
         });
     }
+
+    // ===== INÍCIO DA MODIFICAÇÃO: Listener para o fim da transição da sidebar =====
+    if (DOM.mainContentWrapper) {
+        DOM.mainContentWrapper.addEventListener('transitionend', () => {
+            // Verifica se a aba "Início" está visível
+            if (DOM.inicioView && !DOM.inicioView.classList.contains('hidden')) {
+                resizeHomeCharts();
+            }
+            
+            // Verifica se a aba "Estatísticas" está visível
+            if (DOM.estatisticasView && !DOM.estatisticasView.classList.contains('hidden')) {
+               resizeStatsCharts();
+            }
+        });
+    }
+    // ===== FIM DA MODIFICAÇÃO =====
 
 
     document.addEventListener('click', async (event) => {
