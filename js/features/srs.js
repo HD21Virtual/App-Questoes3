@@ -437,14 +437,21 @@ export async function handleStartReview() {
         setState('sessionStats', []);
         setState('currentQuestionIndex', 0);
 
-        await navigateToView('vade-mecum-view', false);
-
-        DOM.vadeMecumTitle.textContent = "Sessão de Revisão";
-        DOM.toggleFiltersBtn.classList.add('hidden');
-        DOM.filterCard.classList.add('hidden');
-        DOM.selectedFiltersContainer.innerHTML = `<span class="text-gray-500">Revisando ${uniqueQuestionIds.length} questões.</span>`;
+        // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+        // await navigateToView('vade-mecum-view', false); // REMOVIDO
+        
+        // Em vez de navegar, apenas oculta a tabela e mostra o container de questões
+        if(DOM.reviewTableContainer) DOM.reviewTableContainer.classList.add('hidden');
+        if(DOM.startSelectedReviewBtn) DOM.startSelectedReviewBtn.classList.add('hidden');
+        if(DOM.reviewQuestionContainer) DOM.reviewQuestionContainer.classList.remove('hidden');
+        
+        // DOM.vadeMecumTitle.textContent = "Sessão de Revisão"; // REMOVIDO
+        // DOM.toggleFiltersBtn.classList.add('hidden'); // REMOVIDO
+        // DOM.filterCard.classList.add('hidden'); // REMOVIDO
+        // DOM.selectedFiltersContainer.innerHTML = `<span class="text-gray-500">Revisando ${uniqueQuestionIds.length} questões.</span>`; // REMOVIDO
 
         await displayQuestion();
         // updateStatsPanel(); // Painel de estatísticas da aba foi removido.
+        // ===== FIM DA MODIFICAÇÃO =====
     }
 }
