@@ -34,7 +34,9 @@ import {
 } from './features/caderno.js';
 // ===== FIM DA MODIFICAÇÃO =====
 import { handleAssuntoListClick, handleMateriaListClick, handleBackToMaterias } from './features/materias.js';
-import { handleStartReview, handleSrsFeedback } from './features/srs.js';
+// ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+import { handleStartReview, handleSrsFeedback, renderReviewView } from './features/srs.js'; // Importar renderReviewView
+// ===== FIM DA MODIFICAÇÃO =====
 import { navigateQuestion, handleOptionSelect, checkAnswer, handleDiscardOption } from './features/question-viewer.js';
 // ===== INÍCIO DA MODIFICAÇÃO: Importar setupCustomSelect =====
 import { applyFilters, clearAllFilters, removeFilter, setupCustomSelect } from './features/filter.js';
@@ -600,6 +602,21 @@ export function setupAllEventListeners() {
         
         // --- Revisão ---
         else if (target.closest('#start-selected-review-btn')) await handleStartReview();
+        // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+        // NOVO: Listener para o botão de sair da revisão
+        else if (target.closest('#exit-review-mode-btn')) {
+            setState('isReviewSession', false);
+            if(DOM.reviewQuestionContainer) DOM.reviewQuestionContainer.classList.add('hidden');
+            if(DOM.reviewTableContainer) DOM.reviewTableContainer.classList.remove('hidden');
+            if(DOM.startSelectedReviewBtn) DOM.startSelectedReviewBtn.classList.remove('hidden');
+            
+            // Limpa a sessão e atualiza a tabela
+            clearSessionStats();
+            setState('filteredQuestions', []);
+            setState('currentQuestionIndex', 0);
+            renderReviewView(); // Atualiza a tabela de revisão
+        }
+        // ===== FIM DA MODIFICAÇÃO =====
         // --- MODIFICAÇÃO: Listener para expandir/recolher na tabela de revisão ---
         else if (target.closest('.toggle-review-row')) {
             const row = target.closest('tr');
@@ -963,9 +980,13 @@ export function setupAllEventListeners() {
                 if (selectAllCheckbox && isChecked) {
                     selectAllCheckbox.indeterminate = false;
                 }
+                
+                // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+                // Atualiza o botão de iniciar revisão
+                const anyChecked = DOM.reviewTableContainer.querySelector('.review-checkbox:checked');
+                if(DOM.startSelectedReviewBtn) DOM.startSelectedReviewBtn.disabled = !anyChecked;
+                // ===== FIM DA MODIFICAÇÃO =====
             }
-            
-            // Atualiza o botão de iniciar revisão (movido para handleReviewTableSelection)
         }
         // --- FIM DA MODIFICAÇÃO ---
         
