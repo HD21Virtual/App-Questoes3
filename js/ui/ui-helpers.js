@@ -164,7 +164,8 @@ export function updateUserUI(user) {
 
     if (user) {
         // HTML para o Header (desktop/tablet) - Apenas o botão de Sair
-        const loggedInDesktopHTML = `<button id="logout-btn" class="text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-sm font-medium">Sair</button>`;
+        // MODIFICAÇÃO: String vazia para remover o botão do header.
+        const loggedInDesktopHTML = '';
         
         // HTML para a Sidebar (mobile/desktop) - Email + Botão Sair
         const loggedInSidebarHTML = `
