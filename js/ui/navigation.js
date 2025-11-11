@@ -2,7 +2,9 @@ import DOM from '../dom-elements.js';
 import { exitAddMode, renderFoldersAndCadernos } from '../features/caderno.js';
 import { renderMateriasView } from '../features/materias.js';
 import { clearAllFilters } from '../features/filter.js';
-import { setState, state } from '../state.js';
+// ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+import { setState, state, clearSessionStats } from '../state.js';
+// ===== FIM DA MODIFICAÇÃO =====
 import { updateStatsPageUI, renderEstatisticasView } from '../features/stats.js';
 import { renderReviewView } from '../features/srs.js';
 
@@ -19,6 +21,17 @@ export async function navigateToView(viewId, isUserClick = true) {
         DOM.revisaoView,
         DOM.estatisticasView
     ];
+    
+    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+    // Se o usuário navegar para LONGE da aba de revisão enquanto estiver em uma sessão,
+    // encerra a sessão.
+    if (state.isReviewSession && viewId !== 'revisao-view') {
+        setState('isReviewSession', false);
+        // TODO: Salvar estatísticas da sessão de revisão antes de limpar?
+        // Por enquanto, apenas limpamos.
+        clearSessionStats();
+    }
+    // ===== FIM DA MODIFICAÇÃO =====
     
     // Sair do modo de adição apenas se estiver navegando para uma tela DIFERENTE da de questões.
     if (state.isAddingQuestionsMode.active && viewId !== 'vade-mecum-view') {
@@ -55,6 +68,8 @@ export async function navigateToView(viewId, isUserClick = true) {
         // encerrando qualquer sessão de revisão ativa.
         if (isUserClick) {
             if (state.isReviewSession) {
+                // Esta verificação agora é redundante por causa da lógica no topo,
+                // mas mantemos por segurança.
                 setState('isReviewSession', false);
             }
             
@@ -76,7 +91,28 @@ export async function navigateToView(viewId, isUserClick = true) {
         // Chamar a atualização das estatísticas sempre que a tela inicial for exibida
         updateStatsPageUI();
     } else if (viewId === 'revisao-view') {
-        renderReviewView();
+        // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+        // Se o usuário CLICOU na aba "Revisão", encerra qualquer sessão ativa
+        if (isUserClick && state.isReviewSession) {
+            setState('isReviewSession', false);
+            clearSessionStats();
+        }
+
+        renderReviewView(); // Renderiza a tabela de revisão
+
+        // Garante que o estado visual correto seja exibido
+        if (state.isReviewSession) {
+            // Se a sessão ainda estiver ativa (ex: navegação programática, embora improvável agora)
+            if(DOM.reviewTableContainer) DOM.reviewTableContainer.classList.add('hidden');
+            if(DOM.startSelectedReviewBtn) DOM.startSelectedReviewBtn.classList.add('hidden');
+            if(DOM.reviewQuestionContainer) DOM.reviewQuestionContainer.classList.remove('hidden');
+        } else {
+            // Estado padrão: mostra a tabela, esconde as questões
+            if(DOM.reviewTableContainer) DOM.reviewTableContainer.classList.remove('hidden');
+            if(DOM.startSelectedReviewBtn) DOM.startSelectedReviewBtn.classList.remove('hidden');
+            if(DOM.reviewQuestionContainer) DOM.reviewQuestionContainer.classList.add('hidden');
+        }
+        // ===== FIM DA MODIFICAÇÃO =====
     } else if (viewId === 'estatisticas-view') {
         // ===== INÍCIO DA MODIFICAÇÃO: Adicionado await =====
         await renderEstatisticasView();
