@@ -69,6 +69,10 @@ export function initDOM() {
     // Review View
     DOM.reviewTableContainer = document.getElementById('review-table-container');
     DOM.startSelectedReviewBtn = document.getElementById('start-selected-review-btn');
+    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+    DOM.reviewQuestionContainer = document.getElementById('review-question-container');
+    DOM.exitReviewModeBtn = document.getElementById('exit-review-mode-btn');
+    // ===== FIM DA MODIFICAÇÃO =====
 
 
     // Auth Modal (MODIFICADO)
