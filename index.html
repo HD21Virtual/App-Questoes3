@@ -128,107 +128,18 @@
                 </div>
             </div>
 
-            <!-- ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) ===== -->
-            <!-- O Banner de Adição e o Filter Card foram movidos para fora da vade-mecum-view -->
-            <!-- para que possam ser usados globalmente (ex: na tela de cadernos). -->
-            
-            <!-- Banner de Adição de Questões (AGORA GLOBAL) -->
-            <div id="add-questions-banner" class="hidden bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-lg shadow-md mx-4 sm:mx-6 lg:mx-8" role="alert">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-bold">Modo de Adição de Questões</p>
-                        <p id="add-questions-banner-text">Selecione e filtre as questões que deseja adicionar.</p>
-                    </div>
-                    <button id="cancel-add-questions-btn" class="text-blue-500 hover:text-blue-700 font-bold">Cancelar</button>
-                </div>
-            </div>
-
-            <!-- Seção de Filtros Reestruturada (AGORA GLOBAL E HIDDEN) -->
-            <div id="filter-card" class="hidden bg-gray-50 p-6 rounded-xl shadow-md mb-8 mx-4 sm:mx-6 lg:mx-8">
-                <div class="flex justify-end mb-4">
-                    <button id="saved-filters-list-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600 bg-gray-100 border border-gray-300 px-4 py-2 rounded-lg shadow-md">
-                        <i class="fas fa-bookmark mr-2"></i>
-                        Filtros Salvos
-                    </button>
-                </div>
-                <div class="space-y-4">
-                    <!-- Linha 1: Dropdowns -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                            </span>
-                            <input type="text" id="search-input" placeholder="Pesquisar" class="w-full p-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        
-                        <!-- Custom Select: Disciplina -->
-                        <div id="materia-filter" class="relative custom-select-container">
-                             <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center">
-                                 <span class="custom-select-value">Disciplina</span>
-                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                             </button>
-                             <div class="custom-select-panel hidden absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-                                <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
-                                <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
-                                    <!-- Opções serão inseridas pelo JS -->
-                                </div>
-                             </div>
-                        </div>
-
-                        <!-- Custom Select: Assunto -->
-                        <div id="assunto-filter" class="relative custom-select-container">
-                             <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                 <span class="custom-select-value">Assunto</span>
-                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                             </button>
-                             <div class="custom-select-panel hidden absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-                                <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
-                                <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
-                                   <!-- Opções serão inseridas pelo JS -->
-                                </div>
-                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Linha 2: Tipo de questão -->
-                    <div class="pt-4 border-t mt-4">
-                         <div class="flex items-center flex-wrap gap-x-4 gap-y-2">
-                            <span class="text-sm font-medium text-gray-700">Tipo de questão:</span>
-                            <div id="tipo-filter-group" class="flex flex-wrap gap-2 filter-btn-group">
-                                <button data-value="todos" class="filter-btn-toggle active-filter px-3 py-1 text-sm border rounded-lg">Todos</button>
-                                <button data-value="C/E" class="filter-btn-toggle px-3 py-1 text-sm border rounded-lg">Certo e errado</button>
-                                <button data-value="Multipla Escolha" class="filter-btn-toggle px-3 py-1 text-sm border rounded-lg">Múltipla escolha</button>
-                            </div>
-                         </div>
-                    </div>
-                    
-                    <!-- Ações do Filtro -->
-                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200 mt-4">
-                         <div id="selected-filters-container" class="flex flex-wrap gap-2 items-center text-sm text-gray-700 flex-1">
-                             <!-- Tags de filtro aparecerão aqui -->
-                         </div>
-                         <div class="flex flex-wrap items-center justify-center md:justify-end gap-4 mt-4 md:mt-0">
-                             <button id="clear-filters-btn" class="text-sm text-gray-600 hover:text-blue-600">Limpar filtro</button>
-                             <button id="save-filter-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
-                                <i class="fas fa-save mr-1 font-normal"></i>
-                                Salvar filtro
-                             </button>
-                             <button id="create-caderno-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
-                                <i class="fas fa-book mr-1 font-normal"></i>
-                                Criar Caderno
-                             </button>
-                             <button id="filter-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300">Filtrar questões</button>
-                         </div>
-                    </div>
-                </div>
-            </div>
-            <!-- ===== FIM DA MODIFICAÇÃO ===== -->
-
-
             <!-- MODIFICAÇÃO: Removido 'max-w-7xl mx-auto' -->
             <div id="vade-mecum-view" class="hidden px-4 sm:px-6 lg:px-8">
-                <!-- Banner de Adição de Questões (MOVIDO) -->
-                <!-- Seção de Filtros Reestruturada (MOVIDO) -->
+                <!-- Banner de Adição de Questões -->
+                <div id="add-questions-banner" class="hidden bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-lg shadow-md" role="alert">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-bold">Modo de Adição de Questões</p>
+                            <p id="add-questions-banner-text">Selecione e filtre as questões que deseja adicionar.</p>
+                        </div>
+                        <button id="cancel-add-questions-btn" class="text-blue-500 hover:text-blue-700 font-bold">Cancelar</button>
+                    </div>
+                </div>
 
                 <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
                      <h2 id="vade-mecum-title" class="text-2xl font-bold text-gray-800">Vade Mecum de Questões</h2>
@@ -236,6 +147,85 @@
                         <i class="fas fa-eye-slash mr-2"></i>
                         Ocultar Filtros
                      </button>
+                </div>
+                <!-- Seção de Filtros Reestruturada -->
+                <div id="filter-card" class="bg-gray-50 p-6 rounded-xl shadow-md mb-8">
+                    <div class="flex justify-end mb-4">
+                        <button id="saved-filters-list-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600 bg-gray-100 border border-gray-300 px-4 py-2 rounded-lg shadow-md">
+                            <i class="fas fa-bookmark mr-2"></i>
+                            Filtros Salvos
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <!-- Linha 1: Dropdowns -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </span>
+                                <input type="text" id="search-input" placeholder="Pesquisar" class="w-full p-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Custom Select: Disciplina -->
+                            <div id="materia-filter" class="relative custom-select-container">
+                                 <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center">
+                                     <span class="custom-select-value">Disciplina</span>
+                                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                 </button>
+                                 <div class="custom-select-panel hidden absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                                    <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
+                                    <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
+                                        <!-- Opções serão inseridas pelo JS -->
+                                    </div>
+                                 </div>
+                            </div>
+
+                            <!-- Custom Select: Assunto -->
+                            <div id="assunto-filter" class="relative custom-select-container">
+                                 <button type="button" class="custom-select-button w-full text-left p-2 border border-gray-300 rounded-lg bg-white text-gray-500 flex justify-between items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                     <span class="custom-select-value">Assunto</span>
+                                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                 </button>
+                                 <div class="custom-select-panel hidden absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                                    <div class="p-2 border-b"><input type="text" class="custom-select-search w-full p-1 border border-gray-300 rounded-lg" placeholder="Pesquisar..."></div>
+                                    <div class="custom-select-options max-h-48 overflow-y-auto p-2 space-y-1">
+                                       <!-- Opções serão inseridas pelo JS -->
+                                    </div>
+                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Linha 2: Tipo de questão -->
+                        <div class="pt-4 border-t mt-4">
+                             <div class="flex items-center flex-wrap gap-x-4 gap-y-2">
+                                <span class="text-sm font-medium text-gray-700">Tipo de questão:</span>
+                                <div id="tipo-filter-group" class="flex flex-wrap gap-2 filter-btn-group">
+                                    <button data-value="todos" class="filter-btn-toggle active-filter px-3 py-1 text-sm border rounded-lg">Todos</button>
+                                    <button data-value="C/E" class="filter-btn-toggle px-3 py-1 text-sm border rounded-lg">Certo e errado</button>
+                                    <button data-value="Multipla Escolha" class="filter-btn-toggle px-3 py-1 text-sm border rounded-lg">Múltipla escolha</button>
+                                </div>
+                             </div>
+                        </div>
+                        
+                        <!-- Ações do Filtro -->
+                        <div class="flex flex-col md:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200 mt-4">
+                             <div id="selected-filters-container" class="flex flex-wrap gap-2 items-center text-sm text-gray-700 flex-1">
+                                 <!-- Tags de filtro aparecerão aqui -->
+                             </div>
+                             <div class="flex flex-wrap items-center justify-center md:justify-end gap-4 mt-4 md:mt-0">
+                                 <button id="clear-filters-btn" class="text-sm text-gray-600 hover:text-blue-600">Limpar filtro</button>
+                                 <button id="save-filter-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
+                                    <i class="fas fa-save mr-1 font-normal"></i>
+                                    Salvar filtro
+                                 </button>
+                                 <button id="create-caderno-btn" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
+                                    <i class="fas fa-book mr-1 font-normal"></i>
+                                    Criar Caderno
+                                 </button>
+                                 <button id="filter-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300">Filtrar questões</button>
+                             </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Main Content Area for Vade Mecum -->
@@ -297,7 +287,6 @@
                      </div>
                 </div>
                 <!-- Este container será preenchido com a UI de pastas/cadernos ou com a UI de questões (quando um caderno for aberto) -->
-                <!-- OU será preenchido com a lista de questões para adicionar (durante o modo de adição) -->
                 <div id="saved-cadernos-list-container">
                     <!-- Pastas e cadernos serão inseridos aqui -->
                 </div>
