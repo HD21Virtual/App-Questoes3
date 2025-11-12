@@ -21,6 +21,12 @@ export async function navigateToView(viewId, isUserClick = true) {
         DOM.revisaoView,
         DOM.estatisticasView
     ];
+
+    // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
+    // Esconde os componentes globais (filtro e banner) ao navegar
+    if (DOM.filterCard) DOM.filterCard.classList.add('hidden');
+    if (DOM.addQuestionsBanner) DOM.addQuestionsBanner.classList.add('hidden');
+    // ===== FIM DA MODIFICAÇÃO =====
     
     // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
     // Se o usuário navegar para LONGE da aba de revisão enquanto estiver em uma sessão,
@@ -34,7 +40,8 @@ export async function navigateToView(viewId, isUserClick = true) {
     // ===== FIM DA MODIFICAÇÃO =====
     
     // Sair do modo de adição apenas se estiver navegando para uma tela DIFERENTE da de questões.
-    if (state.isAddingQuestionsMode.active && viewId !== 'vade-mecum-view') {
+    // MODIFICAÇÃO: E também se não estiver navegando para a tela de cadernos (onde o modo agora vive)
+    if (state.isAddingQuestionsMode.active && viewId !== 'vade-mecum-view' && viewId !== 'cadernos-view') {
         exitAddMode();
     }
 
@@ -78,7 +85,7 @@ export async function navigateToView(viewId, isUserClick = true) {
             if (!state.isAddingQuestionsMode.active) {
                 DOM.vadeMecumTitle.textContent = "Vade Mecum de Questões";
                 DOM.toggleFiltersBtn.classList.remove('hidden');
-                DOM.filterCard.classList.remove('hidden');
+                DOM.filterCard.classList.remove('hidden'); // <-- Mostra o filtro global
                 clearAllFilters(); // Esta função também aciona applyFilters() que buscará e exibirá as questões.
             }
         }
