@@ -8,9 +8,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Incluindo Font Awesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <!-- Incluindo Chart.js para gráficos -->
+    
+    <!-- === MODIFICAÇÃO INÍCIO === -->
+    <!-- Incluindo Chart.js para gráficos (usado em outras abas) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Incluindo o plugin datalabels para Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- Incluindo ApexCharts (NOVO) -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <!-- === MODIFICAÇÃO FIM === -->
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -525,10 +532,14 @@
                                     <span class="text-sm text-gray-700">Desempenho (%)</span>
                                 </label>
                             </div>
-
+                            
+                            <!-- === MODIFICAÇÃO INÍCIO === -->
+                            <!-- O <canvas> foi removido e substituído por um <div> -->
+                            <!-- O wrapper <div> já tem h-96, então o container pode ser simples -->
                             <div class="relative w-full h-96">
-                                <canvas id="evolutionChartCanvas"></canvas>
+                                <div id="evolutionChartContainer"></div>
                             </div>
+                            <!-- === MODIFICAÇÃO FIM === -->
                         </div>
                     </div>
                 </div>
