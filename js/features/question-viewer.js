@@ -1,8 +1,8 @@
 import { state, setState, getActiveContainer } from '../state.js';
 import { handleSrsFeedback, formatInterval } from './srs.js';
-import { updateStatsPanel, updateStatsPageUI } from './stats.js';
+import { updateStatsPageUI } from './stats.js';
 import { saveUserAnswer, updateQuestionHistory, saveCadernoState } from '../services/firestore.js';
-// A importação de 'caderno.js' foi removida para corrigir um erro de dependência circular.
+import { removeQuestionFromCaderno } from './caderno-actions.js';
 
 export async function navigateQuestion(direction) {
     if (direction === 'prev' && state.currentQuestionIndex > 0) {
@@ -36,11 +36,9 @@ export async function checkAnswer() {
     if (!state.selectedAnswer) return;
     const isCorrect = state.selectedAnswer === question.correctAnswer;
 
-    // This flag indicates that the answer is fresh and should trigger SRS
     const isFreshAnswer = true;
     renderAnsweredQuestion(isCorrect, state.selectedAnswer, isFreshAnswer);
-    
-    // A estatística da sessão é adicionada aqui, mas o SRS é tratado no `handleSrsFeedback`
+
     if (!state.sessionStats.some(s => s.questionId === question.id)) {
         state.sessionStats.push({
             questionId: question.id, isCorrect: isCorrect, materia: question.materia,
@@ -48,7 +46,6 @@ export async function checkAnswer() {
         });
     }
 
-    // updateStatsPanel(); // Painel de estatísticas da aba foi removido.
     updateStatsPageUI();
 }
 
@@ -74,14 +71,14 @@ function renderUnansweredQuestion() {
 
     const question = state.filteredQuestions[state.currentQuestionIndex];
     const options = Array.isArray(question.options) ? question.options : [];
-    
+
     const optionsHtml = options.map((option, index) => {
         let letterContent = '';
         if (question.tipo === 'Multipla Escolha' || question.tipo === 'C/E') {
             const letter = question.tipo === 'C/E' ? option.charAt(0) : String.fromCharCode(65 + index);
             letterContent = `<span class="option-letter text-gray-700 font-medium">${letter}</span>`;
         }
-        
+
         const scissorIconSVG = `
             <svg class="h-5 w-5 text-blue-600 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                <path stroke-linecap="round" stroke-linejoin="round" d="M3.5 6.5a2 2 0 114 0 2 2 0 01-4 0zM3.5 17.5a2 2 0 114 0 2 2 0 01-4 0z"></path>
@@ -113,44 +110,37 @@ function renderUnansweredQuestion() {
              </div>
         <div id="commentary-container" class="hidden mt-6"></div>
     `;
-    
+
     questionsContainer.querySelectorAll('.discard-btn').forEach(btn => {
         btn.addEventListener('click', handleDiscardOption);
     });
 }
-
 
 export function renderAnsweredQuestion(isCorrect, userAnswer, isFreshAnswer = false) {
     const activeContainer = getActiveContainer();
     if (!activeContainer) return;
 
     const question = state.filteredQuestions[state.currentQuestionIndex];
-    
-    // CORREÇÃO: A lógica anterior foi removida. A nova abordagem abaixo lida com a re-renderização de forma mais segura.
 
     activeContainer.querySelectorAll('.option-item').forEach(item => {
         item.classList.add('is-answered');
         item.style.cursor = 'default';
         const option = item.dataset.option;
-        
-        // Limpa classes antigas e ícones para garantir um estado limpo a cada renderização.
+
         item.classList.remove('correct-answer', 'incorrect-answer', 'selected');
         const iconContainer = item.querySelector('.action-icon-container');
         if(iconContainer) {
-            // Remove o botão de descarte
             const discardBtn = iconContainer.querySelector('.discard-btn');
             if (discardBtn) discardBtn.remove();
         }
 
-        // Aplica a classe e o ícone de resposta CORRETA.
         if (option === question.correctAnswer) {
             item.classList.add('correct-answer');
             if(iconContainer) {
                 iconContainer.innerHTML = `<i class="fas fa-check text-green-500 text-xl"></i>`;
             }
         }
-        
-        // Aplica a classe e o ícone de resposta INCORRETA do usuário.
+
         if (option === userAnswer && !isCorrect) {
             item.classList.add('incorrect-answer');
             if(iconContainer) {
@@ -162,10 +152,10 @@ export function renderAnsweredQuestion(isCorrect, userAnswer, isFreshAnswer = fa
 
     const footer = activeContainer.querySelector('#card-footer');
     if (footer) {
-        footer.innerHTML = ''; // Limpa o conteúdo anterior
+        footer.innerHTML = '';
         const resultClass = isCorrect ? 'text-green-600' : 'text-red-600';
         const resultText = isCorrect ? 'Correta!' : 'Incorreta!';
-        
+
         const feedbackDiv = document.createElement('div');
         feedbackDiv.className = 'flex items-center space-x-4 w-full';
         feedbackDiv.innerHTML = `<span class="font-bold text-lg ${resultClass}">${resultText}</span>`;
@@ -176,9 +166,6 @@ export function renderAnsweredQuestion(isCorrect, userAnswer, isFreshAnswer = fa
 
             let nextIntervalHard, nextIntervalGood, nextIntervalEasy;
 
-            // --- Lógica de Previsão de Intervalo (espelhando srs.js) ---
-
-            // Previsão para "Bom"
             if (repetitions === 0) {
                 nextIntervalGood = 1;
             } else if (repetitions === 1) {
@@ -187,18 +174,13 @@ export function renderAnsweredQuestion(isCorrect, userAnswer, isFreshAnswer = fa
                 nextIntervalGood = Math.ceil(lastInterval * easeFactor);
             }
 
-            // Previsão para "Difícil" (baseado no intervalo anterior * 1.2)
             nextIntervalHard = Math.ceil(Math.max(lastInterval, 1) * 1.2);
-
-            // Previsão para "Fácil" (baseado no intervalo 'Bom' * 1.3)
             nextIntervalEasy = Math.ceil(nextIntervalGood * 1.3);
 
-            // Garante que os intervalos sejam no mínimo 1 e cresçam logicamente
             nextIntervalHard = Math.max(1, nextIntervalHard);
             nextIntervalGood = Math.max(1, nextIntervalGood);
             nextIntervalEasy = Math.max(1, nextIntervalEasy);
-            
-            // Garante que Bom > Dificil e Fácil > Bom
+
             if(nextIntervalGood <= nextIntervalHard) {
                 nextIntervalGood = nextIntervalHard + 1;
             }
@@ -216,7 +198,6 @@ export function renderAnsweredQuestion(isCorrect, userAnswer, isFreshAnswer = fa
             `;
             footer.innerHTML = `<div class="w-full">${feedbackDiv.innerHTML} ${srsButtonsHTML}</div>`;
         } else {
-             // Se não for uma resposta nova (ex: revendo um caderno), mostra o botão de resolução
              feedbackDiv.innerHTML += `<button class="view-resolution-btn text-sm text-blue-600 hover:underline">Ver resolução</button>`;
              footer.appendChild(feedbackDiv);
         }
@@ -224,7 +205,7 @@ export function renderAnsweredQuestion(isCorrect, userAnswer, isFreshAnswer = fa
 
     const viewResolutionBtn = activeContainer.querySelector('.view-resolution-btn');
     const commentaryContainer = activeContainer.querySelector('#commentary-container');
-    
+
     if (viewResolutionBtn && commentaryContainer) {
         viewResolutionBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -288,16 +269,13 @@ export async function displayQuestion() {
     const userAnswerData = state.userAnswers.get(question.id);
 
     questionCounterTop.innerHTML = `Questão ${state.currentQuestionIndex + 1} de ${state.filteredQuestions.length}`;
-    
-    // ===== INÍCIO DA MODIFICAÇÃO =====
-    // Constrói a hierarquia de Matéria e Assuntos
+
     let hierarchyHtml = `
         <div class="flex space-x-1">
           <span class="text-gray-700">Matéria:</span><a href="#" class="text-blue-600 hover:underline">${question.materia}</a>
         </div>
     `;
 
-    // Constrói a hierarquia de assuntos, tratando valores nulos
     const parts = [];
     if (question.assunto) {
         parts.push(`<a href="#" class="text-blue-600 hover:underline">${question.assunto}</a>`);
@@ -309,7 +287,6 @@ export async function displayQuestion() {
         parts.push(`<a href="#" class="text-blue-600 hover:underline">${question.subSubAssunto}</a>`);
     }
 
-    // Monta a string de "Assunto" com " > "
     if (parts.length > 0) {
          hierarchyHtml += `
             <div class="flex items-start space-x-1">
@@ -318,9 +295,8 @@ export async function displayQuestion() {
             </div>
         `;
     }
-    
+
     questionInfoContainer.innerHTML = hierarchyHtml;
-    // ===== FIM DA MODIFICAÇÃO =====
 
     let toolbarHTML = `
         <button class="toolbar-btn flex items-center hover:text-blue-600 transition-colors" title="Gabarito Comentado"><i class="fas fa-graduation-cap mr-2"></i><span class="toolbar-text">Gabarito Comentado</span></button>
@@ -330,7 +306,7 @@ export async function displayQuestion() {
         <button class="toolbar-btn flex items-center hover:text-blue-600 transition-colors" title="Desempenho"><i class="fas fa-chart-bar mr-2"></i><span class="toolbar-text">Desempenho</span></button>
         <button class="toolbar-btn flex items-center hover:text-blue-600 transition-colors" title="Notificar Erro"><i class="fas fa-flag mr-2"></i><span class="toolbar-text">Notificar Erro</span></button>
     `;
-    
+
     if(state.currentCadernoId) {
         toolbarHTML += `
             <button class="remove-question-btn toolbar-btn text-red-500 hover:text-red-700 transition-colors text-sm flex items-center" data-question-id="${question.id}" title="Remover do caderno">
@@ -348,16 +324,15 @@ export async function displayQuestion() {
     navigationControls.classList.remove('hidden');
 
     renderUnansweredQuestion();
-    
+
     const footer = activeContainer.querySelector('#card-footer');
-    
-    // Mostra a resposta salva apenas se estivermos num caderno E NÃO numa sessão de revisão
+
     if (userAnswerData && state.currentCadernoId && !state.isReviewSession) {
         renderAnsweredQuestion(userAnswerData.isCorrect, userAnswerData.userAnswer, false);
     } else if (footer) {
         footer.innerHTML = `<button id="submit-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300 disabled:bg-blue-400 disabled:cursor-not-allowed" disabled>Resolver</button>`;
     }
-    
+
     await updateNavigation();
 }
 
