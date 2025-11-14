@@ -8,7 +8,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { auth } from '../firebase-config.js';
 // --- CORREÇÃO: Importar 'state' e 'saveSessionStats' ---
-import { state, setState, resetStateOnLogout, clearUnsubscribes, clearSessionStats } from '../state.js';
+import { state, setState, resetStateOnLogout, clearUnsubscribes, clearSessionStats, subscribe } from '../state.js';
 // CORREÇÃO: Importar saveSessionStats para salvar o progresso ao deslogar
 import { setupAllListeners, saveSessionStats } from '../services/firestore.js';
 import { updateUserUI } from '../ui/ui-helpers.js';
@@ -24,7 +24,6 @@ export function initAuth() {
         setState('currentUser', user);
 
         if (user) {
-            updateUserUI(user);
             closeAuthModal();
             setupAllListeners(user.uid);
             // ===== INÍCIO DA MODIFICAÇÃO: Adicionado await =====
@@ -32,7 +31,6 @@ export function initAuth() {
             // ===== FIM DA MODIFICAÇÃO =====
         } else {
             resetStateOnLogout();
-            updateUserUI(null);
             // ===== INÍCIO DA MODIFICAÇÃO: Adicionado await =====
             await navigateToView('inicio-view');
             // ===== FIM DA MODIFICAÇÃO =====
@@ -73,3 +71,5 @@ export async function handleGoogleAuth() {
         DOM.authError.classList.remove('hidden');
     }
 }
+
+subscribe('currentUser', updateUserUI);
