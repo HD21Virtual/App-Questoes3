@@ -4,6 +4,12 @@ import { saveSessionStats } from './services/firestore.js';
 import { navigateToView } from './ui/navigation.js';
 import { resizeHomeCharts, resizeStatsCharts } from './ui/charts.js';
 
+// --- INÍCIO DA CORREÇÃO ---
+// Importar funções de autenticação e modal
+import { handleAuth, handleGoogleAuth } from './services/auth.js';
+import { closeAuthModal, openAuthModal } from './ui/modal.js';
+// --- FIM DA CORREÇÃO ---
+
 let isInitialSetup = true;
 
 // --- Main Event Listener Setup ---
@@ -24,9 +30,50 @@ export function setupAllEventListeners() {
         });
     }
 
+    // --- INÍCIO DA CORREÇÃO: Listeners para os botões internos do Modal de Autenticação ---
+    if (isInitialSetup) {
+        if (DOM.authModal) {
+            // Usamos delegação de eventos no próprio modal
+            DOM.authModal.addEventListener('click', (event) => {
+                const target = event.target;
+                
+                // 1. Botão de fechar (X)
+                if (target.closest('#close-auth-modal')) {
+                    closeAuthModal();
+                }
+                // 2. Botão de Login
+                if (target.closest('#login-btn')) {
+                    event.preventDefault(); // Prevenir envio de formulário se houver
+                    handleAuth('login');
+                }
+                // 3. Botão de Registrar
+                if (target.closest('#register-btn')) {
+                    event.preventDefault();
+                    handleAuth('register');
+                }
+                // 4. Botão do Google
+                if (target.closest('#google-login-btn')) {
+                    event.preventDefault();
+                    handleGoogleAuth();
+                }
+            });
+        }
+    }
+    // --- FIM DA CORREÇÃO ---
+
     if (isInitialSetup) {
         document.addEventListener('click', async (event) => {
             const target = event.target;
+
+            // --- INÍCIO DA CORREÇÃO: Listener para o botão "Minha Conta" do header ---
+            // O listener no 'ui-helpers.js' só cobre o botão da sidebar.
+            // Este listener delegado (no 'document') cobre o botão do header,
+            // que é recriado dinamicamente.
+            if (target.closest('#show-login-modal-btn')) {
+                openAuthModal();
+                return; // Impede que o clique feche outros menus
+            }
+            // --- FIM DA CORREÇÃO ---
 
             // Close menus on outside click
             if (document.body.classList.contains('sidebar-open-mobile') && !target.closest('#sidebar-nav') && !target.closest('#sidebar-toggle-btn')) {
