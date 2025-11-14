@@ -4,6 +4,12 @@ import { saveSessionStats } from './services/firestore.js';
 import { navigateToView } from './ui/navigation.js';
 import { resizeHomeCharts, resizeStatsCharts } from './ui/charts.js';
 
+// ===== INÍCIO DA CORREÇÃO =====
+// Importa as funções necessárias para o modal de autenticação
+import { handleAuth, handleGoogleAuth } from './services/auth.js';
+import { closeAuthModal } from './ui/modal.js';
+// ===== FIM DA CORREÇÃO =====
+
 let isInitialSetup = true;
 
 // --- Main Event Listener Setup ---
@@ -23,6 +29,25 @@ export function setupAllEventListeners() {
             }
         });
     }
+
+    // ===== INÍCIO DA CORREÇÃO =====
+    // Adiciona os listeners para os botões do modal de autenticação
+    // Estes elementos são estáticos (existem no HTML desde o início),
+    // então podemos adicionar os listeners diretamente.
+    if (DOM.loginBtn) {
+        DOM.loginBtn.addEventListener('click', () => handleAuth('login'));
+    }
+    if (DOM.registerBtn) {
+        DOM.registerBtn.addEventListener('click', () => handleAuth('register'));
+    }
+    if (DOM.googleLoginBtn) {
+        DOM.googleLoginBtn.addEventListener('click', handleGoogleAuth);
+    }
+    if (DOM.closeAuthModalBtn) {
+        DOM.closeAuthModalBtn.addEventListener('click', closeAuthModal);
+    }
+    // ===== FIM DA CORREÇÃO =====
+
 
     if (isInitialSetup) {
         document.addEventListener('click', async (event) => {
