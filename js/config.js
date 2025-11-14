@@ -1,10 +1,10 @@
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAbDQfS3VTVlXEBdHKKwx-ToTWTGFOcYAE",
+  authDomain: "vade-mecum-de-questoes.firebaseapp.com",
+  projectId: "vade-mecum-de-questoes",
+  storageBucket: "vade-mecum-de-questoes.firebasestorage.app",
+  messagingSenderId: "667396734608",
+  appId: "1:667396734608:web:96f67c131ccbd798792215"
 };
 
 export { firebaseConfig };
