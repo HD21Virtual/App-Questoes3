@@ -1,5 +1,6 @@
+import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.1/lit-html.js';
 import DOM from '../dom-elements.js';
-import { state, setState } from '../state.js';
+import { state, setState, subscribe } from '../state.js';
 import { navigateToView } from '../ui/navigation.js';
 import { clearAllFilters, applyFilters } from './filter.js';
 
@@ -54,7 +55,7 @@ function buildHierarchy(questions, materiaName) {
         if (!q.subSubAssunto) {
             return;
         }
-        
+
         // Nível 3: SubSubAssunto (sabemos que q.subSubAssunto existe)
         const subSubAssuntosSet = subAssuntosMap.get(q.subAssunto);
         subSubAssuntosSet.add(q.subSubAssunto);
@@ -66,7 +67,7 @@ function buildHierarchy(questions, materiaName) {
 
 export function renderMateriasView() {
     if (!state.currentUser) {
-        DOM.materiasListContainer.innerHTML = '<p class="text-center text-gray-500">Por favor, faça login para ver as matérias.</p>';
+        render(html`<p class="text-center text-gray-500">Por favor, faça login para ver as matérias.</p>`, DOM.materiasListContainer);
         DOM.assuntosListContainer.classList.add('hidden');
         return;
     }
@@ -78,75 +79,70 @@ export function renderMateriasView() {
         DOM.backToMateriasBtn.classList.remove('hidden');
 
         const hierarchy = buildHierarchy(state.allQuestions, state.selectedMateria.name);
-        let listItemsHtml = '';
 
-        // --- MODIFICAÇÃO: Renderização da lista de 4 níveis ---
-        const sortedAssuntos = Array.from(hierarchy.keys()).sort(naturalSort); // <- MUDANÇA: Ordenação natural
-        
-        sortedAssuntos.forEach(assunto => {
+        const sortedAssuntos = Array.from(hierarchy.keys()).sort(naturalSort);
+
+        const listItemsTemplate = sortedAssuntos.map(assunto => {
             const subAssuntosMap = hierarchy.get(assunto);
-            const sortedSubAssuntos = Array.from(subAssuntosMap.keys()).sort(naturalSort); // <- MUDANÇA: Ordenação natural
+            const sortedSubAssuntos = Array.from(subAssuntosMap.keys()).sort(naturalSort);
             const totalQuestoesAssunto = countQuestions(state.selectedMateria.name, assunto);
-            const hasSubAssuntos = sortedSubAssuntos.length > 0; // Simplificado
+            const hasSubAssuntos = sortedSubAssuntos.length > 0;
 
-            listItemsHtml += `
+            return html`
                 <li class="assunto-group">
                     <div class="flex justify-between items-center p-2 hover:bg-gray-100 rounded-lg cursor-pointer" data-action="${hasSubAssuntos ? 'toggle-assunto' : 'filter-item'}">
                         <div class="flex items-center flex-grow">
-                            ${hasSubAssuntos ? '<i class="fas fa-chevron-right text-gray-400 w-4 text-center mr-2 transition-transform duration-200 rotate-90"></i>' : '<span class="w-6 mr-2"></span>'}
+                            ${hasSubAssuntos ? html`<i class="fas fa-chevron-right text-gray-400 w-4 text-center mr-2 transition-transform duration-200 rotate-90"></i>` : html`<span class="w-6 mr-2"></span>`}
                             <span class="font-semibold text-gray-800 assunto-item" data-materia-name="${state.selectedMateria.name}" data-assunto-name="${assunto}">${assunto}</span>
                         </div>
                         <div class="w-20 flex justify-center">
                             <span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded-lg w-full text-center">${totalQuestoesAssunto}</span>
                         </div>
                     </div>
+                    ${hasSubAssuntos ? html`
+                        <ul class="pl-8 mt-1 space-y-1">
+                            ${sortedSubAssuntos.map(subAssunto => {
+                                const subSubAssuntosSet = subAssuntosMap.get(subAssunto);
+                                const sortedSubSubAssuntos = Array.from(subSubAssuntosSet).sort(naturalSort);
+                                const totalQuestoesSubAssunto = countQuestions(state.selectedMateria.name, assunto, subAssunto);
+                                const hasSubSubAssuntos = sortedSubSubAssuntos.length > 0;
+
+                                return html`
+                                    <li class="sub-assunto-group">
+                                        <div class="flex justify-between items-center p-2 hover:bg-blue-50 rounded-lg cursor-pointer" data-action="${hasSubSubAssuntos ? 'toggle-subassunto' : 'filter-item'}">
+                                            <div class="flex items-center flex-grow">
+                                                ${hasSubSubAssuntos ? html`<i class="fas fa-chevron-right text-gray-400 w-4 text-center mr-2 transition-transform duration-200 rotate-90"></i>` : html`<span class="w-6 mr-2"></span>`}
+                                                <span class="sub-assunto-item" data-materia-name="${state.selectedMateria.name}" data-assunto-name="${assunto}" data-subassunto-name="${subAssunto}">${subAssunto}</span>
+                                            </div>
+                                            <div class="w-20 flex justify-center">
+                                                <span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded-lg w-full text-center">${totalQuestoesSubAssunto}</span>
+                                            </div>
+                                        </div>
+                                        ${hasSubSubAssuntos ? html`
+                                            <ul class="pl-8 mt-1 space-y-1">
+                                                ${sortedSubSubAssuntos.map(subSubAssunto => {
+                                                    const totalQuestoesSubSubAssunto = countQuestions(state.selectedMateria.name, assunto, subAssunto, subSubAssunto);
+                                                    return html`
+                                                        <li class="sub-sub-assunto-item cursor-pointer flex justify-between items-center p-2 hover:bg-green-50 rounded-lg" data-materia-name="${state.selectedMateria.name}" data-assunto-name="${assunto}" data-subassunto-name="${subAssunto}" data-subsubassunto-name="${subSubAssunto}">
+                                                            <span>${subSubAssunto}</span>
+                                                            <div class="w-20 flex justify-center">
+                                                                <span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded-lg w-full text-center">${totalQuestoesSubSubAssunto}</span>
+                                                            </div>
+                                                        </li>
+                                                    `;
+                                                })}
+                                            </ul>
+                                        ` : ''}
+                                    </li>
+                                `;
+                            })}
+                        </ul>
+                    ` : ''}
+                </li>
             `;
-
-            if (hasSubAssuntos) {
-                listItemsHtml += '<ul class="pl-8 mt-1 space-y-1">';
-                sortedSubAssuntos.forEach(subAssunto => {
-                    const subSubAssuntosSet = subAssuntosMap.get(subAssunto);
-                    const sortedSubSubAssuntos = Array.from(subSubAssuntosSet).sort(naturalSort); // <- MUDANÇA: Ordenação natural
-                    const totalQuestoesSubAssunto = countQuestions(state.selectedMateria.name, assunto, subAssunto);
-                    const hasSubSubAssuntos = sortedSubSubAssuntos.length > 0;
-
-                    listItemsHtml += `
-                        <li class="sub-assunto-group">
-                            <div class="flex justify-between items-center p-2 hover:bg-blue-50 rounded-lg cursor-pointer" data-action="${hasSubSubAssuntos ? 'toggle-subassunto' : 'filter-item'}">
-                                <div class="flex items-center flex-grow">
-                                    ${hasSubSubAssuntos ? '<i class="fas fa-chevron-right text-gray-400 w-4 text-center mr-2 transition-transform duration-200 rotate-90"></i>' : '<span class="w-6 mr-2"></span>'}
-                                    <span class="sub-assunto-item" data-materia-name="${state.selectedMateria.name}" data-assunto-name="${assunto}" data-subassunto-name="${subAssunto}">${subAssunto}</span>
-                                </div>
-                                <div class="w-20 flex justify-center">
-                                    <span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded-lg w-full text-center">${totalQuestoesSubAssunto}</span>
-                                </div>
-                            </div>
-                    `;
-
-                    if (hasSubSubAssuntos) {
-                        listItemsHtml += '<ul class="pl-8 mt-1 space-y-1">';
-                        sortedSubSubAssuntos.forEach(subSubAssunto => {
-                            const totalQuestoesSubSubAssunto = countQuestions(state.selectedMateria.name, assunto, subAssunto, subSubAssunto);
-                            listItemsHtml += `
-                                <li class="sub-sub-assunto-item cursor-pointer flex justify-between items-center p-2 hover:bg-green-50 rounded-lg" data-materia-name="${state.selectedMateria.name}" data-assunto-name="${assunto}" data-subassunto-name="${subAssunto}" data-subsubassunto-name="${subSubAssunto}">
-                                    <span>${subSubAssunto}</span>
-                                    <div class="w-20 flex justify-center">
-                                    <span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded-lg w-full text-center">${totalQuestoesSubSubAssunto}</span>
-                                    </div>
-                                </li>
-                            `;
-                        });
-                        listItemsHtml += '</ul>';
-                    }
-                    listItemsHtml += '</li>';
-                });
-                listItemsHtml += '</ul>';
-            }
-            listItemsHtml += '</li>';
         });
-        // --- FIM DA MODIFICAÇÃO ---
 
-        const searchBarHtml = `
+        const template = html`
             <div class="mb-4 flex items-center gap-2">
                 <div class="relative flex-grow">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -156,9 +152,6 @@ export function renderMateriasView() {
                 </div>
                 <button id="assunto-search-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Buscar</button>
             </div>
-        `;
-
-        const cardHtml = `
             <div id="assuntos-card" class="bg-gray-50 p-6 rounded-xl shadow-md">
                 <div class="flex justify-between items-center p-2 mb-2 border-b">
                     <h3 class="font-bold text-gray-600">Assuntos desta matéria</h3>
@@ -167,17 +160,15 @@ export function renderMateriasView() {
                     </div>
                 </div>
                 <ul class="space-y-1">
-                    ${listItemsHtml}
+                    ${listItemsTemplate}
                 </ul>
             </div>
         `;
-
-        DOM.assuntosListContainer.innerHTML = searchBarHtml + cardHtml;
+        render(template, DOM.assuntosListContainer);
 
         const searchInput = document.getElementById('assunto-search-input');
         const searchBtn = document.getElementById('assunto-search-btn');
 
-        // --- MODIFICAÇÃO: Lógica de busca para 4 níveis ---
         const performSearch = () => {
             const searchTerm = searchInput.value.toLowerCase();
             const card = document.getElementById('assuntos-card');
@@ -226,7 +217,6 @@ export function renderMateriasView() {
                 }
             });
         };
-        // --- FIM DA MODIFICAÇÃO ---
 
         searchBtn.addEventListener('click', performSearch);
         searchInput.addEventListener('keyup', (event) => {
@@ -242,13 +232,13 @@ export function renderMateriasView() {
         DOM.backToMateriasBtn.classList.add('hidden');
 
         if (state.filterOptions.materia.length === 0) {
-            DOM.materiasListContainer.innerHTML = '<p class="text-center text-gray-500">Nenhuma matéria encontrada. Adicione questões para vê-las aqui.</p>';
+            render(html`<p class="text-center text-gray-500">Nenhuma matéria encontrada. Adicione questões para vê-las aqui.</p>`, DOM.materiasListContainer);
             return;
         }
 
-        const materiasHtml = state.filterOptions.materia.map(materia => {
+        const materiasTemplate = state.filterOptions.materia.map(materia => {
             const totalQuestoes = countQuestions(materia.name);
-             return `
+             return html`
             <div class="bg-gray-50 p-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer materia-item rounded-lg" data-materia-name="${materia.name}">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center">
@@ -261,29 +251,29 @@ export function renderMateriasView() {
                     <i class="fas fa-chevron-right text-gray-400"></i>
                 </div>
             </div>
-        `}).join('');
-        DOM.materiasListContainer.innerHTML = materiasHtml;
+        `;
+        });
+        render(html`${materiasTemplate}`, DOM.materiasListContainer);
     }
 }
 
 
-export function handleMateriaListClick(event) {
+function handleMateriaListClick(event) {
     const materiaItem = event.target.closest('.materia-item');
     if (materiaItem) {
         const materiaName = materiaItem.dataset.materiaName;
         const materiaData = state.filterOptions.materia.find(m => m.name === materiaName) || { name: materiaName, assuntos: [] };
         setState('selectedMateria', materiaData);
-        renderMateriasView();
     }
 }
 
 // ===== INÍCIO DA MODIFICAÇÃO: Função agora é async =====
-export async function handleAssuntoListClick(event) {
+async function handleAssuntoListClick(event) {
 // ===== FIM DA MODIFICAÇÃO =====
     // --- MODIFICAÇÃO: Lógica de clique e toggle refatorada ---
     const toggleAssunto = event.target.closest('[data-action="toggle-assunto"]');
     const toggleSubAssunto = event.target.closest('[data-action="toggle-subassunto"]');
-    
+
     // 1. Handle Toggles
     if (toggleAssunto) {
         const parentLi = toggleAssunto.closest('.assunto-group');
@@ -333,14 +323,14 @@ export async function handleAssuntoListClick(event) {
 
         setTimeout(() => {
             clearAllFilters();
-            
+
             // 1. Seleciona Matéria
             const materiaCheckbox = DOM.materiaFilter.querySelector(`.custom-select-option[data-value="${materiaName}"]`);
             if (materiaCheckbox) {
                 materiaCheckbox.checked = true;
                 DOM.materiaFilter.querySelector('.custom-select-options').dispatchEvent(new Event('change', { bubbles: true }));
             }
-            
+
             // 2. Aguarda o filtro de assunto ser populado
             setTimeout(() => {
                 // 3. Seleciona APENAS o item mais específico clicado
@@ -361,14 +351,27 @@ export async function handleAssuntoListClick(event) {
                 DOM.assuntoFilter.querySelector('.custom-select-options').dispatchEvent(new Event('change', { bubbles: true }));
 
                 // 5. Aplica os filtros
-                applyFilters(); 
+                applyFilters();
             }, 100); // Pequeno delay para garantir que o DOM do filtro de assunto foi atualizado
         }, 50); // Pequeno delay para garantir a navegação da view
     }
     // --- FIM DA MODIFICAÇÃO ---
 }
 
-export function handleBackToMaterias() {
+function handleBackToMaterias() {
     setState('selectedMateria', null);
-    renderMateriasView();
 }
+
+export function setupMateriasEventListeners() {
+    if (DOM.materiasListContainer) {
+        DOM.materiasListContainer.addEventListener('click', handleMateriaListClick);
+    }
+    if (DOM.assuntosListContainer) {
+        DOM.assuntosListContainer.addEventListener('click', handleAssuntoListClick);
+    }
+    if (DOM.backToMateriasBtn) {
+        DOM.backToMateriasBtn.addEventListener('click', handleBackToMaterias);
+    }
+}
+
+subscribe('selectedMateria', renderMateriasView);

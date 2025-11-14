@@ -1,8 +1,10 @@
-import { state, setState, getActiveContainer } from '../state.js';
+import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.1.3/lit-html.js';
+import { state, setState, getActiveContainer, subscribe } from '../state.js';
 import { handleSrsFeedback, formatInterval } from './srs.js';
-import { updateStatsPanel, updateStatsPageUI } from './stats.js';
+import { updateStatsPageUI } from './stats.js';
 import { saveUserAnswer, updateQuestionHistory, saveCadernoState } from '../services/firestore.js';
-// A importação de 'caderno.js' foi removida para corrigir um erro de dependência circular.
+import { removeQuestionFromCaderno } from './caderno-actions.js';
+import DOM from '../dom-elements.js';
 
 export async function navigateQuestion(direction) {
     if (direction === 'prev' && state.currentQuestionIndex > 0) {
@@ -14,7 +16,6 @@ export async function navigateQuestion(direction) {
     if (state.currentCadernoId) {
         await saveCadernoState(state.currentCadernoId, state.currentQuestionIndex);
     }
-    await displayQuestion();
 }
 
 export function handleOptionSelect(event) {
@@ -36,11 +37,8 @@ export async function checkAnswer() {
     if (!state.selectedAnswer) return;
     const isCorrect = state.selectedAnswer === question.correctAnswer;
 
-    // This flag indicates that the answer is fresh and should trigger SRS
-    const isFreshAnswer = true;
-    renderAnsweredQuestion(isCorrect, state.selectedAnswer, isFreshAnswer);
-    
-    // A estatística da sessão é adicionada aqui, mas o SRS é tratado no `handleSrsFeedback`
+    renderQuestionCard(question, { isCorrect, userAnswer: state.selectedAnswer, isFreshAnswer: true });
+
     if (!state.sessionStats.some(s => s.questionId === question.id)) {
         state.sessionStats.push({
             questionId: question.id, isCorrect: isCorrect, materia: question.materia,
@@ -48,7 +46,6 @@ export async function checkAnswer() {
         });
     }
 
-    // updateStatsPanel(); // Painel de estatísticas da aba foi removido.
     updateStatsPageUI();
 }
 
@@ -67,34 +64,53 @@ export function handleDiscardOption(event) {
     }
 }
 
-function renderUnansweredQuestion() {
+function renderQuestionCard(question, answerInfo = null) {
     const activeContainer = getActiveContainer();
     const questionsContainer = activeContainer.querySelector('#questions-container');
-    if(!questionsContainer) return;
+    if (!questionsContainer) return;
 
-    const question = state.filteredQuestions[state.currentQuestionIndex];
-    const options = Array.isArray(question.options) ? question.options : [];
-    
-    const optionsHtml = options.map((option, index) => {
+    const { isCorrect, userAnswer, isFreshAnswer } = answerInfo || {};
+    const isAnswered = answerInfo !== null;
+
+    const scissorIconSVG = html`
+        <svg class="h-5 w-5 text-blue-600 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+           <path stroke-linecap="round" stroke-linejoin="round" d="M3.5 6.5a2 2 0 114 0 2 2 0 01-4 0zM3.5 17.5a2 2 0 114 0 2 2 0 01-4 0z"></path>
+           <path stroke-linecap="round" stroke-linejoin="round" d="M6 8.5L18 15.5"></path>
+           <path stroke-linecap="round" stroke-linejoin="round" d="M6 15.5L18 8.5"></path>
+        </svg>`;
+
+    const optionsTemplate = (question.options || []).map((option, index) => {
         let letterContent = '';
         if (question.tipo === 'Multipla Escolha' || question.tipo === 'C/E') {
             const letter = question.tipo === 'C/E' ? option.charAt(0) : String.fromCharCode(65 + index);
-            letterContent = `<span class="option-letter text-gray-700 font-medium">${letter}</span>`;
+            letterContent = html`<span class="option-letter text-gray-700 font-medium">${letter}</span>`;
         }
-        
-        const scissorIconSVG = `
-            <svg class="h-5 w-5 text-blue-600 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-               <path stroke-linecap="round" stroke-linejoin="round" d="M3.5 6.5a2 2 0 114 0 2 2 0 01-4 0zM3.5 17.5a2 2 0 114 0 2 2 0 01-4 0z"></path>
-               <path stroke-linecap="round" stroke-linejoin="round" d="M6 8.5L18 15.5"></path>
-               <path stroke-linecap="round" stroke-linejoin="round" d="M6 15.5L18 8.5"></path>
-            </svg>`;
 
-        return `
-            <div data-option="${option}" class="option-item group flex items-center p-2 rounded-lg cursor-pointer transition duration-200">
+        let actionIconTemplate;
+        let optionClass = 'option-item group flex items-center p-2 rounded-lg transition duration-200';
+
+        if (isAnswered) {
+            optionClass += ' is-answered';
+            if (option === question.correctAnswer) {
+                optionClass += ' correct-answer';
+                actionIconTemplate = html`<i class="fas fa-check text-green-500 text-xl"></i>`;
+            } else if (option === userAnswer) {
+                optionClass += ' incorrect-answer';
+                actionIconTemplate = html`<i class="fas fa-times text-red-500 text-xl"></i>`;
+            }
+        } else {
+            optionClass += ' cursor-pointer';
+            actionIconTemplate = html`
+                <div class="discard-btn opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200 hover:bg-blue-100 rounded-full p-1.5"
+                     @click=${handleDiscardOption}>
+                    ${scissorIconSVG}
+                </div>`;
+        }
+
+        return html`
+            <div data-option="${option}" class="${optionClass}">
                <div class="action-icon-container w-8 h-8 flex-shrink-0 flex items-center justify-center mr-1">
-                    <div class="discard-btn opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200 hover:bg-blue-100 rounded-full p-1.5">
-                        ${scissorIconSVG}
-                    </div>
+                    ${actionIconTemplate}
                 </div>
                <div class="option-circle flex-shrink-0 w-8 h-8 border-2 border-gray-300 rounded-full flex items-center justify-center mr-4 transition-all duration-200">
                    ${letterContent}
@@ -102,73 +118,13 @@ function renderUnansweredQuestion() {
                <span class="option-text text-gray-800">${option}</span>
             </div>
         `;
-    }).join('');
-
-    questionsContainer.innerHTML = `
-        <p class="text-gray-800 text-lg mb-6 leading-relaxed">${question.text}</p>
-        <div id="options-container" class="space-y-2">
-            ${optionsHtml}
-        </div>
-        <div id="card-footer" class="mt-6 flex items-center">
-             </div>
-        <div id="commentary-container" class="hidden mt-6"></div>
-    `;
-    
-    questionsContainer.querySelectorAll('.discard-btn').forEach(btn => {
-        btn.addEventListener('click', handleDiscardOption);
-    });
-}
-
-
-export function renderAnsweredQuestion(isCorrect, userAnswer, isFreshAnswer = false) {
-    const activeContainer = getActiveContainer();
-    if (!activeContainer) return;
-
-    const question = state.filteredQuestions[state.currentQuestionIndex];
-    
-    // CORREÇÃO: A lógica anterior foi removida. A nova abordagem abaixo lida com a re-renderização de forma mais segura.
-
-    activeContainer.querySelectorAll('.option-item').forEach(item => {
-        item.classList.add('is-answered');
-        item.style.cursor = 'default';
-        const option = item.dataset.option;
-        
-        // Limpa classes antigas e ícones para garantir um estado limpo a cada renderização.
-        item.classList.remove('correct-answer', 'incorrect-answer', 'selected');
-        const iconContainer = item.querySelector('.action-icon-container');
-        if(iconContainer) {
-            // Remove o botão de descarte
-            const discardBtn = iconContainer.querySelector('.discard-btn');
-            if (discardBtn) discardBtn.remove();
-        }
-
-        // Aplica a classe e o ícone de resposta CORRETA.
-        if (option === question.correctAnswer) {
-            item.classList.add('correct-answer');
-            if(iconContainer) {
-                iconContainer.innerHTML = `<i class="fas fa-check text-green-500 text-xl"></i>`;
-            }
-        }
-        
-        // Aplica a classe e o ícone de resposta INCORRETA do usuário.
-        if (option === userAnswer && !isCorrect) {
-            item.classList.add('incorrect-answer');
-            if(iconContainer) {
-                iconContainer.innerHTML = `<i class="fas fa-times text-red-500 text-xl"></i>`;
-            }
-        }
-        item.classList.remove('hover:border-blue-300');
     });
 
-    const footer = activeContainer.querySelector('#card-footer');
-    if (footer) {
-        footer.innerHTML = ''; // Limpa o conteúdo anterior
+    let footerTemplate;
+    if (isAnswered) {
         const resultClass = isCorrect ? 'text-green-600' : 'text-red-600';
         const resultText = isCorrect ? 'Correta!' : 'Incorreta!';
-        
-        const feedbackDiv = document.createElement('div');
-        feedbackDiv.className = 'flex items-center space-x-4 w-full';
-        feedbackDiv.innerHTML = `<span class="font-bold text-lg ${resultClass}">${resultText}</span>`;
+        const feedbackDiv = html`<span class="font-bold text-lg ${resultClass}">${resultText}</span>`;
 
         if (isFreshAnswer) {
             const reviewItem = state.userReviewItemsMap.get(question.id) || {};
@@ -176,9 +132,6 @@ export function renderAnsweredQuestion(isCorrect, userAnswer, isFreshAnswer = fa
 
             let nextIntervalHard, nextIntervalGood, nextIntervalEasy;
 
-            // --- Lógica de Previsão de Intervalo (espelhando srs.js) ---
-
-            // Previsão para "Bom"
             if (repetitions === 0) {
                 nextIntervalGood = 1;
             } else if (repetitions === 1) {
@@ -187,18 +140,13 @@ export function renderAnsweredQuestion(isCorrect, userAnswer, isFreshAnswer = fa
                 nextIntervalGood = Math.ceil(lastInterval * easeFactor);
             }
 
-            // Previsão para "Difícil" (baseado no intervalo anterior * 1.2)
             nextIntervalHard = Math.ceil(Math.max(lastInterval, 1) * 1.2);
-
-            // Previsão para "Fácil" (baseado no intervalo 'Bom' * 1.3)
             nextIntervalEasy = Math.ceil(nextIntervalGood * 1.3);
 
-            // Garante que os intervalos sejam no mínimo 1 e cresçam logicamente
             nextIntervalHard = Math.max(1, nextIntervalHard);
             nextIntervalGood = Math.max(1, nextIntervalGood);
             nextIntervalEasy = Math.max(1, nextIntervalEasy);
-            
-            // Garante que Bom > Dificil e Fácil > Bom
+
             if(nextIntervalGood <= nextIntervalHard) {
                 nextIntervalGood = nextIntervalHard + 1;
             }
@@ -206,49 +154,63 @@ export function renderAnsweredQuestion(isCorrect, userAnswer, isFreshAnswer = fa
                 nextIntervalEasy = nextIntervalGood + 1;
             }
 
-            const srsButtonsHTML = `
-                <div class="mt-4 grid grid-cols-4 gap-2 w-full text-center text-sm">
-                    <button class="srs-feedback-btn srs-btn-again" data-feedback="again">Errei<br><span class="font-normal">(1d)</span></button>
-                    <button class="srs-feedback-btn srs-btn-hard" data-feedback="hard">Difícil<br><span class="font-normal">(${formatInterval(nextIntervalHard)})</span></button>
-                    <button class="srs-feedback-btn srs-btn-good" data-feedback="good">Bom<br><span class="font-normal">(${formatInterval(nextIntervalGood)})</span></button>
-                    <button class="srs-feedback-btn srs-btn-easy" data-feedback="easy">Fácil<br><span class="font-normal">(${formatInterval(nextIntervalEasy)})</span></button>
-                </div>
-            `;
-            footer.innerHTML = `<div class="w-full">${feedbackDiv.innerHTML} ${srsButtonsHTML}</div>`;
+            footerTemplate = html`
+                <div class="w-full">
+                    <div class="flex items-center space-x-4 w-full">${feedbackDiv}</div>
+                    <div class="mt-4 grid grid-cols-4 gap-2 w-full text-center text-sm">
+                        <button class="srs-feedback-btn srs-btn-again" data-feedback="again">Errei<br><span class="font-normal">(1d)</span></button>
+                        <button class="srs-feedback-btn srs-btn-hard" data-feedback="hard">Difícil<br><span class="font-normal">(${formatInterval(nextIntervalHard)})</span></button>
+                        <button class="srs-feedback-btn srs-btn-good" data-feedback="good">Bom<br><span class="font-normal">(${formatInterval(nextIntervalGood)})</span></button>
+                        <button class="srs-feedback-btn srs-btn-easy" data-feedback="easy">Fácil<br><span class="font-normal">(${formatInterval(nextIntervalEasy)})</span></button>
+                    </div>
+                </div>`;
         } else {
-             // Se não for uma resposta nova (ex: revendo um caderno), mostra o botão de resolução
-             feedbackDiv.innerHTML += `<button class="view-resolution-btn text-sm text-blue-600 hover:underline">Ver resolução</button>`;
-             footer.appendChild(feedbackDiv);
+            footerTemplate = html`
+                <div class="flex items-center space-x-4 w-full">
+                    ${feedbackDiv}
+                    <button class="view-resolution-btn text-sm text-blue-600 hover:underline" @click=${() => toggleCommentary(question, isCorrect)}>Ver resolução</button>
+                </div>`;
         }
+    } else {
+        footerTemplate = html`<button id="submit-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300 disabled:bg-blue-400 disabled:cursor-not-allowed" disabled>Resolver</button>`;
     }
 
-    const viewResolutionBtn = activeContainer.querySelector('.view-resolution-btn');
+    const questionTemplate = html`
+        <p class="text-gray-800 text-lg mb-6 leading-relaxed">${question.text}</p>
+        <div id="options-container" class="space-y-2">${optionsTemplate}</div>
+        <div id="card-footer" class="mt-6 flex items-center">${footerTemplate}</div>
+        <div id="commentary-container" class="hidden mt-6"></div>
+    `;
+
+    render(questionTemplate, questionsContainer);
+}
+
+function toggleCommentary(question, isCorrect) {
+    const activeContainer = getActiveContainer();
     const commentaryContainer = activeContainer.querySelector('#commentary-container');
-    
-    if (viewResolutionBtn && commentaryContainer) {
-        viewResolutionBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const isHidden = commentaryContainer.classList.contains('hidden');
-            if (isHidden) {
-                const commentaryText = question.explanation || 'Nenhum comentário disponível para esta questão.';
-                const boxColorClass = isCorrect ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800';
-                commentaryContainer.innerHTML = `
-                    <div class="p-4 rounded-lg ${boxColorClass}">
-                        <p class="leading-relaxed">
-                            <strong class="font-bold">Gabarito: ${question.correctAnswer}</strong>
-                            <br>
-                            ${commentaryText}
-                        </p>
-                    </div>
-                `;
-                commentaryContainer.classList.remove('hidden');
-                viewResolutionBtn.textContent = 'Ocultar resolução';
-            } else {
-                commentaryContainer.classList.add('hidden');
-                commentaryContainer.innerHTML = '';
-                viewResolutionBtn.textContent = 'Ver resolução';
-            }
-        });
+    const viewResolutionBtn = activeContainer.querySelector('.view-resolution-btn');
+
+    if (commentaryContainer && viewResolutionBtn) {
+        const isHidden = commentaryContainer.classList.contains('hidden');
+        if (isHidden) {
+            const commentaryText = question.explanation || 'Nenhum comentário disponível para esta questão.';
+            const boxColorClass = isCorrect ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800';
+            const commentaryTemplate = html`
+                <div class="p-4 rounded-lg ${boxColorClass}">
+                    <p class="leading-relaxed">
+                        <strong class="font-bold">Gabarito: ${question.correctAnswer}</strong>
+                        <br>
+                        ${commentaryText}
+                    </p>
+                </div>`;
+            render(commentaryTemplate, commentaryContainer);
+            commentaryContainer.classList.remove('hidden');
+            viewResolutionBtn.textContent = 'Ocultar resolução';
+        } else {
+            commentaryContainer.classList.add('hidden');
+            render(html``, commentaryContainer);
+            viewResolutionBtn.textContent = 'Ver resolução';
+        }
     }
 }
 
@@ -288,16 +250,13 @@ export async function displayQuestion() {
     const userAnswerData = state.userAnswers.get(question.id);
 
     questionCounterTop.innerHTML = `Questão ${state.currentQuestionIndex + 1} de ${state.filteredQuestions.length}`;
-    
-    // ===== INÍCIO DA MODIFICAÇÃO =====
-    // Constrói a hierarquia de Matéria e Assuntos
+
     let hierarchyHtml = `
         <div class="flex space-x-1">
           <span class="text-gray-700">Matéria:</span><a href="#" class="text-blue-600 hover:underline">${question.materia}</a>
         </div>
     `;
 
-    // Constrói a hierarquia de assuntos, tratando valores nulos
     const parts = [];
     if (question.assunto) {
         parts.push(`<a href="#" class="text-blue-600 hover:underline">${question.assunto}</a>`);
@@ -309,7 +268,6 @@ export async function displayQuestion() {
         parts.push(`<a href="#" class="text-blue-600 hover:underline">${question.subSubAssunto}</a>`);
     }
 
-    // Monta a string de "Assunto" com " > "
     if (parts.length > 0) {
          hierarchyHtml += `
             <div class="flex items-start space-x-1">
@@ -318,9 +276,8 @@ export async function displayQuestion() {
             </div>
         `;
     }
-    
+
     questionInfoContainer.innerHTML = hierarchyHtml;
-    // ===== FIM DA MODIFICAÇÃO =====
 
     let toolbarHTML = `
         <button class="toolbar-btn flex items-center hover:text-blue-600 transition-colors" title="Gabarito Comentado"><i class="fas fa-graduation-cap mr-2"></i><span class="toolbar-text">Gabarito Comentado</span></button>
@@ -330,7 +287,7 @@ export async function displayQuestion() {
         <button class="toolbar-btn flex items-center hover:text-blue-600 transition-colors" title="Desempenho"><i class="fas fa-chart-bar mr-2"></i><span class="toolbar-text">Desempenho</span></button>
         <button class="toolbar-btn flex items-center hover:text-blue-600 transition-colors" title="Notificar Erro"><i class="fas fa-flag mr-2"></i><span class="toolbar-text">Notificar Erro</span></button>
     `;
-    
+
     if(state.currentCadernoId) {
         toolbarHTML += `
             <button class="remove-question-btn toolbar-btn text-red-500 hover:text-red-700 transition-colors text-sm flex items-center" data-question-id="${question.id}" title="Remover do caderno">
@@ -347,17 +304,16 @@ export async function displayQuestion() {
     questionToolbar.classList.remove('hidden');
     navigationControls.classList.remove('hidden');
 
-    renderUnansweredQuestion();
-    
-    const footer = activeContainer.querySelector('#card-footer');
-    
-    // Mostra a resposta salva apenas se estivermos num caderno E NÃO numa sessão de revisão
     if (userAnswerData && state.currentCadernoId && !state.isReviewSession) {
-        renderAnsweredQuestion(userAnswerData.isCorrect, userAnswerData.userAnswer, false);
-    } else if (footer) {
-        footer.innerHTML = `<button id="submit-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300 disabled:bg-blue-400 disabled:cursor-not-allowed" disabled>Resolver</button>`;
+        renderQuestionCard(question, {
+            isCorrect: userAnswerData.isCorrect,
+            userAnswer: userAnswerData.userAnswer,
+            isFreshAnswer: false
+        });
+    } else {
+        renderQuestionCard(question);
     }
-    
+
     await updateNavigation();
 }
 
@@ -395,3 +351,28 @@ export function renderQuestionListForAdding(questions, existingQuestionIds) {
         `;
     }).join('');
 }
+
+export function setupQuestionViewerEventListeners() {
+    DOM.vadeMecumView.addEventListener('click', async (event) => {
+        const target = event.target;
+
+        if (target.closest('#prev-question-btn')) {
+            await navigateQuestion('prev');
+        } else if (target.closest('#next-question-btn')) {
+            await navigateQuestion('next');
+        } else if (target.closest('.option-item') && !target.closest('.discard-btn')) {
+            handleOptionSelect(event);
+        } else if (target.closest('#submit-btn')) {
+            await checkAnswer();
+        } else if (target.closest('.discard-btn')) {
+            handleDiscardOption(event);
+        } else if (target.closest('.srs-feedback-btn')) {
+            await handleSrsFeedback(target.closest('.srs-feedback-btn').dataset.feedback);
+        } else if (target.closest('.remove-question-btn')) {
+            removeQuestionFromCaderno(target.closest('.remove-question-btn').dataset.questionId);
+        }
+    });
+}
+
+subscribe('filteredQuestions', displayQuestion);
+subscribe('currentQuestionIndex', displayQuestion);
