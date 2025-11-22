@@ -1,5 +1,5 @@
 import DOM from '../dom-elements.js';
-import { state, setState } from '../state.js';
+import { state, setState, subscribe } from '../state.js';
 import { navigateToView } from '../ui/navigation.js';
 import { clearAllFilters, applyFilters } from './filter.js';
 
@@ -54,7 +54,7 @@ function buildHierarchy(questions, materiaName) {
         if (!q.subSubAssunto) {
             return;
         }
-        
+
         // Nível 3: SubSubAssunto (sabemos que q.subSubAssunto existe)
         const subSubAssuntosSet = subAssuntosMap.get(q.subAssunto);
         subSubAssuntosSet.add(q.subSubAssunto);
@@ -82,7 +82,7 @@ export function renderMateriasView() {
 
         // --- MODIFICAÇÃO: Renderização da lista de 4 níveis ---
         const sortedAssuntos = Array.from(hierarchy.keys()).sort(naturalSort); // <- MUDANÇA: Ordenação natural
-        
+
         sortedAssuntos.forEach(assunto => {
             const subAssuntosMap = hierarchy.get(assunto);
             const sortedSubAssuntos = Array.from(subAssuntosMap.keys()).sort(naturalSort); // <- MUDANÇA: Ordenação natural
@@ -267,23 +267,22 @@ export function renderMateriasView() {
 }
 
 
-export function handleMateriaListClick(event) {
+function handleMateriaListClick(event) {
     const materiaItem = event.target.closest('.materia-item');
     if (materiaItem) {
         const materiaName = materiaItem.dataset.materiaName;
         const materiaData = state.filterOptions.materia.find(m => m.name === materiaName) || { name: materiaName, assuntos: [] };
         setState('selectedMateria', materiaData);
-        renderMateriasView();
     }
 }
 
 // ===== INÍCIO DA MODIFICAÇÃO: Função agora é async =====
-export async function handleAssuntoListClick(event) {
+async function handleAssuntoListClick(event) {
 // ===== FIM DA MODIFICAÇÃO =====
     // --- MODIFICAÇÃO: Lógica de clique e toggle refatorada ---
     const toggleAssunto = event.target.closest('[data-action="toggle-assunto"]');
     const toggleSubAssunto = event.target.closest('[data-action="toggle-subassunto"]');
-    
+
     // 1. Handle Toggles
     if (toggleAssunto) {
         const parentLi = toggleAssunto.closest('.assunto-group');
@@ -333,14 +332,14 @@ export async function handleAssuntoListClick(event) {
 
         setTimeout(() => {
             clearAllFilters();
-            
+
             // 1. Seleciona Matéria
             const materiaCheckbox = DOM.materiaFilter.querySelector(`.custom-select-option[data-value="${materiaName}"]`);
             if (materiaCheckbox) {
                 materiaCheckbox.checked = true;
                 DOM.materiaFilter.querySelector('.custom-select-options').dispatchEvent(new Event('change', { bubbles: true }));
             }
-            
+
             // 2. Aguarda o filtro de assunto ser populado
             setTimeout(() => {
                 // 3. Seleciona APENAS o item mais específico clicado
@@ -361,14 +360,27 @@ export async function handleAssuntoListClick(event) {
                 DOM.assuntoFilter.querySelector('.custom-select-options').dispatchEvent(new Event('change', { bubbles: true }));
 
                 // 5. Aplica os filtros
-                applyFilters(); 
+                applyFilters();
             }, 100); // Pequeno delay para garantir que o DOM do filtro de assunto foi atualizado
         }, 50); // Pequeno delay para garantir a navegação da view
     }
     // --- FIM DA MODIFICAÇÃO ---
 }
 
-export function handleBackToMaterias() {
+function handleBackToMaterias() {
     setState('selectedMateria', null);
-    renderMateriasView();
 }
+
+export function setupMateriasEventListeners() {
+    if (DOM.materiasListContainer) {
+        DOM.materiasListContainer.addEventListener('click', handleMateriaListClick);
+    }
+    if (DOM.assuntosListContainer) {
+        DOM.assuntosListContainer.addEventListener('click', handleAssuntoListClick);
+    }
+    if (DOM.backToMateriasBtn) {
+        DOM.backToMateriasBtn.addEventListener('click', handleBackToMaterias);
+    }
+}
+
+subscribe('selectedMateria', renderMateriasView);

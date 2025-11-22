@@ -84,6 +84,15 @@ export function initDOM() {
     DOM.emailInput = document.getElementById('email-input');
     DOM.passwordInput = document.getElementById('password-input');
     DOM.authError = document.getElementById('auth-error');
+    
+    // ===== INÍCIO DA CORREÇÃO =====
+    // Adiciona referências para os botões do modal de autenticação
+    DOM.loginBtn = document.getElementById('login-btn');
+    DOM.registerBtn = document.getElementById('register-btn');
+    DOM.googleLoginBtn = document.getElementById('google-login-btn');
+    DOM.closeAuthModalBtn = document.getElementById('close-auth-modal');
+    // ===== FIM DA CORREÇÃO =====
+
 
     // Save Filter Modal
     DOM.saveModal = document.getElementById('save-modal');

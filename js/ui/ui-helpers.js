@@ -200,5 +200,13 @@ export function updateUserUI(user) {
             // Re-usa a função openAuthModal importada
             loginBtnSidebar.addEventListener('click', openAuthModal);
         }
+
+        // ===== INÍCIO DA CORREÇÃO =====
+        // Adiciona listener para o botão de login do DESKTOP (cabeçalho)
+        const loginBtnDesktop = document.getElementById('show-login-modal-btn');
+        if (loginBtnDesktop) {
+            loginBtnDesktop.addEventListener('click', openAuthModal);
+        }
+        // ===== FIM DA CORREÇÃO =====
     }
 }

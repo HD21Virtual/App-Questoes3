@@ -1,96 +1,46 @@
 import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { state, setState, getActiveContainer } from '../state.js';
+import { state, setState, clearSessionStats, subscribe } from '../state.js';
 import DOM from '../dom-elements.js';
-import { navigateToView } from '../ui/navigation.js';
-// --- CORREÇÃO: Importar a função displayQuestion ---
-import { renderAnsweredQuestion, displayQuestion } from './question-viewer.js';
-import { updateStatsPanel, updateStatsPageUI } from './stats.js';
-// ===== INÍCIO DA MODIFICAÇÃO =====
+import { displayQuestion, renderAnsweredQuestion } from './question-viewer.js';
+import { updateStatsPageUI } from './stats.js';
 import { setSrsReviewItem, saveUserAnswer, updateQuestionHistory, logPerformanceEntry } from '../services/firestore.js';
-// ===== FIM DA MODIFICAÇÃO =====
-
-// --- IMPLEMENTAÇÃO DO ALGORITMO SM-2 (AJUSTADO) ---
+import { renderQuestionSolver } from "../ui/question-solver-ui.js";
 
 const MIN_EASE_FACTOR = 1.3;
 const INITIAL_EASE_FACTOR = 2.5;
 
-/**
- * Ordena strings alfanumericamente (ex: "2.10" vem depois de "2.9").
- * @param {string} a
- * @param {string} b
- * @returns {number}
- */
 function naturalSort(a, b) {
     return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 }
 
-/**
- * Calcula os próximos parâmetros do SRS com base no algoritmo SM-2.
- * @param {object} reviewItem - O item de revisão atual da questão.
- * @param {number} quality - A qualidade da resposta (0: Errei, 1: Difícil, 2: Bom, 3: Fácil).
- * @returns {object} Novo item de revisão com { easeFactor, interval, repetitions, nextReviewDate }.
- */
 function calculateSm2(reviewItem, quality) {
     let { easeFactor = INITIAL_EASE_FACTOR, interval = 0, repetitions = 0 } = reviewItem || {};
 
-    // 1. Lida com respostas incorretas (qualidade 0)
     if (quality === 0) {
-        repetitions = 0; // Reseta o progresso
-        interval = 1;    // Agenda para o próximo dia (Errei 1d)
-        easeFactor = Math.max(MIN_EASE_FACTOR, easeFactor - 0.20); // Penaliza o 'ease'
+        repetitions = 0;
+        interval = 1;
+        easeFactor = Math.max(MIN_EASE_FACTOR, easeFactor - 0.20);
     } else {
-        // 2. Lida com respostas corretas (qualidade 1, 2, 3)
         repetitions += 1;
-
-        // --- INÍCIO DA CORREÇÃO (Lógica de Intervalo) ---
-        // A lógica foi ajustada para refletir os intervalos esperados na primeira revisão:
-        // Difícil (1) = 2 dias, Bom (2) = 3 dias, Fácil (3) = 4 dias.
-        // As revisões seguintes (rep 2+) seguem um padrão SM-2 modificado.
-
         if (repetitions === 1) {
-            // Primeira revisão (Repetição 1)
-            if (quality === 1) { // 'Difícil'
-                interval = 2; // Agendado para 2 dias
-            } else if (quality === 2) { // 'Bom'
-                interval = 3; // Agendado para 3 dias
-            } else if (quality === 3) { // 'Fácil'
-                interval = 4; // Agendado para 4 dias
-            } else {
-                interval = 1; // Fallback
-            }
+            if (quality === 1) { interval = 2; }
+            else if (quality === 2) { interval = 3; }
+            else if (quality === 3) { interval = 4; }
+            else { interval = 1; }
         } else if (repetitions === 2) {
-            // Segunda revisão (Repetição 2)
-            // Usamos um intervalo fixo padrão do SM-2
-            interval = 6; 
+            interval = 6;
         } else {
-            // Terceira revisão e subsequentes (Repetição 3+)
-            // Usa o easeFactor para calcular o próximo intervalo
             interval = Math.ceil(interval * easeFactor);
-
-            // Aplicamos modificadores de bônus/penalidade
-            if (quality === 1) { // 'Difícil'
-                // Penaliza levemente o intervalo se achar difícil (mas não reseta)
-                interval = Math.ceil(interval * 0.9);
-            } else if (quality === 3) { // 'Fácil'
-                // Aplica um bônus de 30% sobre o intervalo recém-calculado.
-                interval = Math.ceil(interval * 1.3);
-            }
-            // 'Bom' (quality 2) não modifica o intervalo, usa o easeFactor puro.
+            if (quality === 1) { interval = Math.ceil(interval * 0.9); }
+            else if (quality === 3) { interval = Math.ceil(interval * 1.3); }
         }
-        // --- FIM DA CORREÇÃO ---
     }
 
-    // 3. Atualiza o Fator de Facilidade (apenas para respostas corretas)
     if (quality > 0) {
-        if (quality === 1) { // 'Difícil'
-            easeFactor = Math.max(MIN_EASE_FACTOR, easeFactor - 0.15);
-        } else if (quality === 3) { // 'Fácil'
-            easeFactor += 0.15;
-        }
-        // 'Bom' (quality 2) não altera o easeFactor
+        if (quality === 1) { easeFactor = Math.max(MIN_EASE_FACTOR, easeFactor - 0.15); }
+        else if (quality === 3) { easeFactor += 0.15; }
     }
-    
-    // Garante que o intervalo mínimo seja 1.
+
     interval = Math.max(1, interval);
 
     const date = new Date();
@@ -100,12 +50,6 @@ function calculateSm2(reviewItem, quality) {
     return { easeFactor, interval, repetitions, nextReviewDate };
 }
 
-
-/**
- * Formata um intervalo em dias para uma string legível (ex: "3d", "2m", "1a").
- * @param {number} intervalInDays - O intervalo em dias.
- * @returns {string} O intervalo formatado.
- */
 export function formatInterval(intervalInDays) {
     if (intervalInDays < 1) return "<1d";
     if (intervalInDays < 30) return `${Math.round(intervalInDays)}d`;
@@ -113,18 +57,15 @@ export function formatInterval(intervalInDays) {
     return `${(intervalInDays / 365).toFixed(1)}a`;
 }
 
-
 export async function handleSrsFeedback(feedback) {
-    setState('isUpdatingAnswer', true); // BUG FIX: Set flag to prevent snapshot re-render
+    setState('isUpdatingAnswer', true);
 
     const question = state.filteredQuestions[state.currentQuestionIndex];
     const isCorrect = state.selectedAnswer === question.correctAnswer;
-    
-    // Mapeia o feedback do botão para a qualidade numérica
+
     const qualityMap = { 'again': 0, 'hard': 1, 'good': 2, 'easy': 3 };
     let quality = qualityMap[feedback];
-    
-    // Se a resposta estiver incorreta, a qualidade é sempre 0 (Errei), não importa o botão clicado
+
     if (!isCorrect) {
         quality = 0;
     }
@@ -139,35 +80,25 @@ export async function handleSrsFeedback(feedback) {
     if (state.currentUser) {
         const currentReviewItem = state.userReviewItemsMap.get(question.id);
         const newReviewData = calculateSm2(currentReviewItem, quality);
-        
-        const reviewDataToSave = { 
+
+        const reviewDataToSave = {
             ...newReviewData,
             questionId: question.id,
             lastReviewed: Timestamp.now()
         };
 
         await setSrsReviewItem(question.id, reviewDataToSave);
-        state.userReviewItemsMap.set(question.id, reviewDataToSave);
 
         await saveUserAnswer(question.id, state.selectedAnswer, isCorrect);
-        
-        // ===== INÍCIO DA MODIFICAÇÃO =====
-        // Atualiza tanto o histórico vitalício QUANTO o log diário
+
         await updateQuestionHistory(question.id, isCorrect);
         await logPerformanceEntry(question, isCorrect);
-        // ===== FIM DA MODIFICAÇÃO =====
     }
 
     renderAnsweredQuestion(isCorrect, state.selectedAnswer, false);
-    // updateStatsPanel(); // Painel de estatísticas da aba foi removido.
-    updateStatsPageUI();
-    
-    // **CORREÇÃO:** Força a atualização da estrutura de dados da tela de revisão em tempo real.
-    renderReviewView();
 
-    setState('isUpdatingAnswer', false); // BUG FIX: Unset flag after updates
+    setState('isUpdatingAnswer', false);
 }
-
 
 export function renderReviewView() {
     if (!state.currentUser) {
@@ -180,10 +111,9 @@ export function renderReviewView() {
         return;
     }
 
-    // --- MODIFICAÇÃO: Popula questionIdToDetails com 4 níveis ---
     const questionIdToDetails = new Map();
     state.allQuestions.forEach(q => {
-        if (q.materia && q.assunto) { // Apenas questões válidas
+        if (q.materia && q.assunto) {
             questionIdToDetails.set(q.id, {
                 materia: q.materia,
                 assunto: q.assunto,
@@ -192,26 +122,21 @@ export function renderReviewView() {
             });
         }
     });
-    // --- FIM DA MODIFICAÇÃO ---
 
-
-    // --- MODIFICAÇÃO: Construção da hierarquia de 4 níveis ---
     const hierarchy = new Map();
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    // Helper para criar um nó de estatísticas
     const createStatsNode = () => ({
         total: 0, errei: 0, dificil: 0, bom: 0, facil: 0, aRevisar: 0,
         questionIdsARevisar: [],
-        children: new Map() // Usar Map para sub-níveis
+        children: new Map()
     });
 
-    // Helper para incrementar as estatísticas de um nó
     const incrementStats = (node, item) => {
         node.total++;
         const { repetitions = 0, easeFactor = INITIAL_EASE_FACTOR } = item;
-        
+
         if (repetitions === 0) {
             node.errei++;
         } else if (easeFactor < 2.4) {
@@ -234,25 +159,22 @@ export function renderReviewView() {
 
     state.userReviewItemsMap.forEach(item => {
         const details = questionIdToDetails.get(item.questionId);
-        if (!details) return; // Pula se a questão não for encontrada
+        if (!details) return;
 
         const { materia, assunto, subAssunto, subSubAssunto } = details;
 
-        // Nível 1: Matéria
         if (!hierarchy.has(materia)) {
             hierarchy.set(materia, createStatsNode());
         }
         const materiaNode = hierarchy.get(materia);
         incrementStats(materiaNode, item);
 
-        // Nível 2: Assunto
         if (!materiaNode.children.has(assunto)) {
             materiaNode.children.set(assunto, createStatsNode());
         }
         const assuntoNode = materiaNode.children.get(assunto);
         incrementStats(assuntoNode, item);
 
-        // Nível 3: SubAssunto (só adiciona se existir)
         if (subAssunto) {
             if (!assuntoNode.children.has(subAssunto)) {
                 assuntoNode.children.set(subAssunto, createStatsNode());
@@ -260,25 +182,18 @@ export function renderReviewView() {
             const subAssuntoNode = assuntoNode.children.get(subAssunto);
             incrementStats(subAssuntoNode, item);
 
-            // Nível 4: SubSubAssunto (só adiciona se existir)
             if (subSubAssunto) {
-                // --- CORREÇÃO ---
-                // O erro estava aqui. Deveria checar/criar no `subAssuntoNode.children`
                 if (!subAssuntoNode.children.has(subSubAssunto)) {
                     subAssuntoNode.children.set(subSubAssunto, createStatsNode());
                 }
-                // E aqui, deveria pegar o nó recém-criado/existente a partir do `subAssuntoNode`
                 const subSubAssuntoNode = subAssuntoNode.children.get(subSubAssunto);
-                // --- FIM DA CORREÇÃO ---
                 incrementStats(subSubAssuntoNode, item);
             }
         }
     });
-    
-    setState('reviewStatsByMateria', hierarchy); // Salva a nova hierarquia
-    // --- FIM DA MODIFICAÇÃO ---
 
-    
+    setState('reviewStatsByMateria', hierarchy);
+
     if (hierarchy.size === 0) {
         DOM.reviewTableContainer.innerHTML = `<p class="text-center text-gray-500 p-8">Nenhuma matéria com questões para revisar.</p>`;
         return;
@@ -288,7 +203,6 @@ export function renderReviewView() {
         <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50">
                 <tr>
-                    <!-- MODIFICAÇÃO: Adicionado div.pl-4 para alinhar checkbox -->
                     <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         <div class="pl-4">
                             <input type="checkbox" id="select-all-review-materias" class="rounded">
@@ -306,7 +220,6 @@ export function renderReviewView() {
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">`;
 
-    // --- MODIFICAÇÃO: Função recursiva para renderizar linhas ---
     const renderRow = (node, name, level, parentId = '', pathData = {}) => {
         const { total, errei, dificil, bom, facil, aRevisar } = node;
         const isDisabled = aRevisar === 0;
@@ -315,22 +228,19 @@ export function renderReviewView() {
         const hasChildren = node.children.size > 0;
         const isHidden = level > 1 ? 'hidden' : '';
         const rowTypeClass = ['materia-row', 'assunto-row', 'subassunto-row', 'subsubassunto-row'][level - 1];
-        const indentClass = `pl-${(level - 1) * 4}`; // pl-0, pl-4, pl-8, pl-12
+        const indentClass = `pl-${(level - 1) * 4}`;
         const rowId = parentId ? `${parentId}__${name.replace(/[^a-zA-Z0-9]/g, '-')}` : `row__${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
-        
-        // Passa os dados do caminho (materia, assunto, etc.) para o checkbox
+
         const dataAttributes = Object.entries(pathData).map(([key, value]) => `data-${key}="${value}"`).join(' ');
 
         let html = `
             <tr class="${rowTypeClass} ${isHidden} ${isDisabled ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'}" data-id="${rowId}" data-parent-id="${parentId}" data-level="${level}">
                 <td class="px-4 py-4 whitespace-nowrap">
-                    <!-- Checkbox alinhado (pl-4) e com data attributes -->
                     <div class="flex items-center pl-4">
                         <input type="checkbox" class="review-checkbox rounded" ${dataAttributes} ${isDisabled ? 'disabled' : ''} data-level="${level}">
                     </div>
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap font-medium ${isDisabled ? '' : 'text-gray-900'}">
-                    <!-- Nome com indentação (baseada no nível) -->
                     <div class="flex items-center ${indentClass}">
                         ${hasChildren
                             ? `<i class="fas fa-chevron-right toggle-review-row transition-transform duration-200 mr-2 text-gray-400 cursor-pointer"></i>`
@@ -358,19 +268,17 @@ export function renderReviewView() {
             const sortedChildren = Array.from(node.children.keys()).sort(naturalSort);
             for (const childName of sortedChildren) {
                 const childNode = node.children.get(childName);
-                
-                // Constrói o path de dados para o filho
+
                 let childPathData = { ...pathData };
                 if (level === 1) childPathData.assunto = childName;
                 else if (level === 2) childPathData.subassunto = childName;
                 else if (level === 3) childPathData.subsubassunto = childName;
-                
+
                 html += renderRow(childNode, childName, level + 1, rowId, childPathData);
             }
         }
         return html;
     };
-    // --- FIM DA FUNÇÃO RECURSIVA ---
 
     const sortedMaterias = Array.from(hierarchy.keys()).sort(naturalSort);
     sortedMaterias.forEach(materiaName => {
@@ -382,40 +290,29 @@ export function renderReviewView() {
     DOM.reviewTableContainer.innerHTML = tableHtml;
 }
 
-
 export async function handleStartReview() {
     if (!state.currentUser) return;
-    
-    // --- MODIFICAÇÃO: Seleciona pela classe genérica e busca nós na hierarquia ---
+
     const selectedCheckboxes = DOM.reviewTableContainer.querySelectorAll('.review-checkbox:checked');
     if (selectedCheckboxes.length === 0) return;
 
     const questionsToReviewIds = new Set();
-    const hierarchy = state.reviewStatsByMateria; // Pega a hierarquia salva no estado
+    const hierarchy = state.reviewStatsByMateria;
 
     selectedCheckboxes.forEach(cb => {
         const { materia, assunto, subassunto, subsubassunto } = cb.dataset;
 
         let node;
         try {
-            // Navega na hierarquia (Map) para encontrar o nó selecionado
             node = hierarchy.get(materia);
             if (assunto) node = node.children.get(assunto);
             if (subassunto) node = node.children.get(subassunto);
             if (subsubassunto) node = node.children.get(subsubassunto);
         } catch (e) {
-            console.warn("Nó não encontrado na hierarquia de revisão:", cb.dataset);
             node = null;
         }
 
-        // Adiciona os IDs de revisão do nó (e de todos os seus filhos, implicitamente)
-        // A lógica de seleção de checkbox (em event-listeners) garante que se um pai é checado, os filhos também são.
-        // Aqui só precisamos coletar os IDs do nó específico.
-        // CORREÇÃO: A lógica de seleção (em event-listeners) *não* checa os filhos.
-        // A *coleta* aqui deve ser recursiva.
-
         if (node) {
-            // Função recursiva para coletar IDs
             const collectIds = (currentNode) => {
                 if (currentNode.questionIdsARevisar) {
                     currentNode.questionIdsARevisar.forEach(id => questionsToReviewIds.add(id));
@@ -427,7 +324,6 @@ export async function handleStartReview() {
             collectIds(node);
         }
     });
-    // --- FIM DA MODIFICAÇÃO ---
 
     const uniqueQuestionIds = Array.from(questionsToReviewIds);
 
@@ -437,21 +333,54 @@ export async function handleStartReview() {
         setState('sessionStats', []);
         setState('currentQuestionIndex', 0);
 
-        // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
-        // await navigateToView('vade-mecum-view', false); // REMOVIDO
-        
-        // Em vez de navegar, apenas oculta a tabela e mostra o container de questões
         if(DOM.reviewTableContainer) DOM.reviewTableContainer.classList.add('hidden');
         if(DOM.startSelectedReviewBtn) DOM.startSelectedReviewBtn.classList.add('hidden');
-        if(DOM.reviewQuestionContainer) DOM.reviewQuestionContainer.classList.remove('hidden');
-        
-        // DOM.vadeMecumTitle.textContent = "Sessão de Revisão"; // REMOVIDO
-        // DOM.toggleFiltersBtn.classList.add('hidden'); // REMOVIDO
-        // DOM.filterCard.classList.add('hidden'); // REMOVIDO
-        // DOM.selectedFiltersContainer.innerHTML = `<span class="text-gray-500">Revisando ${uniqueQuestionIds.length} questões.</span>`; // REMOVIDO
+        if(DOM.reviewQuestionContainer) {
+            DOM.reviewQuestionContainer.classList.remove('hidden');
+            renderQuestionSolver(DOM.reviewQuestionContainer);
+        }
 
         await displayQuestion();
-        // updateStatsPanel(); // Painel de estatísticas da aba foi removido.
-        // ===== FIM DA MODIFICAÇÃO =====
     }
 }
+
+export function setupSrsEventListeners() {
+    DOM.revisaoView.addEventListener('click', async (event) => {
+        const target = event.target;
+
+        if (target.closest('#start-selected-review-btn')) {
+            await handleStartReview();
+        } else if (target.closest('#exit-review-mode-btn')) {
+            setState('isReviewSession', false);
+            if(DOM.reviewQuestionContainer) DOM.reviewQuestionContainer.classList.add('hidden');
+            if(DOM.reviewTableContainer) DOM.reviewTableContainer.classList.remove('hidden');
+            if(DOM.startSelectedReviewBtn) DOM.startSelectedReviewBtn.classList.remove('hidden');
+
+            clearSessionStats();
+            setState('filteredQuestions', []);
+            setState('currentQuestionIndex', 0);
+            renderReviewView();
+        } else if (target.closest('.toggle-review-row')) {
+            const row = target.closest('tr');
+            const rowId = row.dataset.id;
+            const isExpanded = target.classList.toggle('rotate-90');
+
+            document.querySelectorAll(`tr[data-parent-id="${rowId}"]`).forEach(childRow => {
+                childRow.classList.toggle('hidden', !isExpanded);
+
+                if (!isExpanded) {
+                    const childIcon = childRow.querySelector('.toggle-review-row');
+                    if (childIcon && childIcon.classList.contains('rotate-90')) {
+                        childIcon.classList.remove('rotate-90');
+                        const grandChildRows = document.querySelectorAll(`tr[data-parent-id="${childRow.dataset.id}"]`);
+                        grandChildRows.forEach(gc => {
+                            gc.classList.add('hidden');
+                        });
+                    }
+                }
+            });
+        }
+    });
+}
+
+subscribe('userReviewItemsMap', renderReviewView);

@@ -1,5 +1,7 @@
 import DOM from './dom-elements.js';
 
+const subscribers = {};
+
 let state = {
     currentUser: null,
     allQuestions: [],
@@ -44,9 +46,23 @@ let state = {
     unsubscribes: []
 };
 
+export function subscribe(key, callback) {
+    if (!subscribers[key]) {
+        subscribers[key] = [];
+    }
+    subscribers[key].push(callback);
+}
+
+export function notify(key, ...args) {
+    if (subscribers[key]) {
+        subscribers[key].forEach(callback => callback(...args));
+    }
+}
+
 export function setState(key, value) {
     if (key in state) {
         state[key] = value;
+        notify(key, value);
     } else {
         console.warn(`Tentativa de definir uma chave de estado inexistente: ${key}`);
     }

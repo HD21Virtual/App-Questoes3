@@ -2,16 +2,13 @@ import { collection, getDocs, query, orderBy, onSnapshot, getDoc, doc, updateDoc
 import { db } from '../firebase-config.js';
 // --- MODIFICAÇÃO: Removido 'clearSessionStats' da importação ---
 import { state, setState, addUnsubscribe } from '../state.js';
-import { renderFoldersAndCadernos } from '../features/caderno.js';
 import { renderReviewView } from '../features/srs.js';
 import { displayQuestion } from "../features/question-viewer.js";
-// MODIFICADO: Importar renderEstatisticasView para atualizar a tabela
-import { updateStatsPageUI, renderEstatisticasView } from "../features/stats.js";
 import { updateSavedFiltersList } from "../ui/modal.js";
 import DOM from "../dom-elements.js";
 
 /**
- * Ordena strings alfanumericamente (ex: "2.10" vem depois de "2.9").
+ * Ordena strings alfanumericamente (ex: "2.10" vemDepois de "2.9").
  * @param {string} a
  * @param {string} b
  * @returns {number}
@@ -24,7 +21,7 @@ export async function fetchAllQuestions() {
     try {
         const querySnapshot = await getDocs(collection(db, "questions"));
         const questions = [];
-        
+
         // --- MODIFICAÇÃO: Hierarquia de 4 níveis ---
         // Estrutura: Map<Materia, Map<Assunto, Map<SubAssunto, Set<SubSubAssunto>>>>
         const hierarchy = new Map();
@@ -47,7 +44,7 @@ export async function fetchAllQuestions() {
                 if (!assuntosMap.has(assunto)) {
                     assuntosMap.set(assunto, new Map());
                 }
-                
+
                 // Se não houver subAssunto, não há mais nada a adicionar na hierarquia.
                 if (!subAssunto) {
                     return; // <- MUDANÇA: Para de processar
@@ -63,7 +60,7 @@ export async function fetchAllQuestions() {
                 if (!subSubAssunto) {
                     return; // <- MUDANÇA: Para de processar
                 }
-                
+
                 // Nível 4: SubSubAssunto (sabemos que subSubAssunto existe)
                 subAssuntosMap.get(subAssunto).add(subSubAssunto);
             }
@@ -73,7 +70,7 @@ export async function fetchAllQuestions() {
 
         // --- MODIFICAÇÃO: Construir filterOptions com 4 níveis ---
         const newFilterOptions = { materia: [] };
-        
+
         const sortedMaterias = Array.from(hierarchy.keys()).sort();
 
         for (const materiaName of sortedMaterias) {
@@ -84,17 +81,17 @@ export async function fetchAllQuestions() {
             for (const assuntoName of sortedAssuntos) {
                 const subAssuntosMap = assuntosMap.get(assuntoName);
                 const sortedSubAssuntos = Array.from(subAssuntosMap.keys()).sort(naturalSort); // <- MUDANÇA: Ordenação natural
-                
+
                 const assuntoData = { name: assuntoName, subAssuntos: [] }; // Nível 2
 
                 for (const subAssuntoName of sortedSubAssuntos) {
                     const subSubAssuntosSet = subAssuntosMap.get(subAssuntoName);
                     const sortedSubSubAssuntos = Array.from(subSubAssuntosSet).sort(naturalSort); // <- MUDANÇA: Ordenação natural
-                    
+
                     // Nível 3 (objeto) e Nível 4 (array de strings)
                     assuntoData.subAssuntos.push({
                         name: subAssuntoName,
-                        subSubAssuntos: sortedSubSubAssuntos 
+                        subSubAssuntos: sortedSubSubAssuntos
                     });
                 }
                 materiaData.assuntos.push(assuntoData);
@@ -126,7 +123,6 @@ export function setupAllListeners(userId) {
         const userCadernos = [];
         snapshot.forEach(doc => userCadernos.push({ id: doc.id, ...doc.data() }));
         setState('userCadernos', userCadernos);
-        renderFoldersAndCadernos();
     });
     addUnsubscribe(unsubCadernos);
 
@@ -134,10 +130,9 @@ export function setupAllListeners(userId) {
         const userFolders = [];
         snapshot.forEach(doc => userFolders.push({ id: doc.id, ...doc.data() }));
         setState('userFolders', userFolders);
-        renderFoldersAndCadernos();
     });
     addUnsubscribe(unsubFolders);
-    
+
     const unsubFiltros = onSnapshot(filtrosQuery, (snapshot) => {
         const savedFilters = [];
         snapshot.forEach(doc => savedFilters.push({ id: doc.id, ...doc.data() }));
@@ -145,12 +140,11 @@ export function setupAllListeners(userId) {
         updateSavedFiltersList();
     });
     addUnsubscribe(unsubFiltros);
-    
+
     const unsubSessions = onSnapshot(sessionsQuery, (snapshot) => {
         const historicalSessions = [];
         snapshot.forEach(doc => historicalSessions.push(doc.data()));
         setState('historicalSessions', historicalSessions);
-        updateStatsPageUI();
     });
     addUnsubscribe(unsubSessions);
 
@@ -168,7 +162,7 @@ export function setupAllListeners(userId) {
         }
     });
     addUnsubscribe(unsubReviewItems);
-    
+
     const unsubAnswers = onSnapshot(answersQuery, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
             const docData = change.doc.data();
@@ -190,7 +184,7 @@ export function setupAllListeners(userId) {
         }
     });
     addUnsubscribe(unsubAnswers);
-    
+
     const unsubCadernoState = onSnapshot(stateQuery, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
             if (change.type === "added" || change.type === "modified") {
@@ -205,23 +199,16 @@ export function setupAllListeners(userId) {
 
     // ADICIONADO: Listener for questionHistory
     const unsubHistory = onSnapshot(historyQuery, (snapshot) => {
+        const newMap = new Map(state.userQuestionHistoryMap);
         snapshot.docChanges().forEach((change) => {
             if (change.type === "added" || change.type === "modified") {
-                state.userQuestionHistoryMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
+                newMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
             }
             if (change.type === "removed") {
-                state.userQuestionHistoryMap.delete(change.doc.id);
+                newMap.delete(change.doc.id);
             }
         });
-        
-        // Se a tela de estatísticas estiver visível, re-renderiza ela
-        // (apenas se não houver filtro de data)
-        if (DOM.estatisticasView && !DOM.estatisticasView.classList.contains('hidden')) {
-             const periodButton = DOM.statsPeriodoButton;
-             if (!periodButton || periodButton.dataset.value === 'tudo') {
-                renderEstatisticasView();
-             }
-        }
+        setState('userQuestionHistoryMap', newMap);
     });
     addUnsubscribe(unsubHistory);
 }
@@ -246,14 +233,14 @@ export async function saveUserAnswer(questionId, userAnswer, isCorrect) {
 
 /**
  * Atualiza o histórico vitalício de uma questão.
- * @param {string} questionId 
- * @param {boolean} isCorrect 
+ * @param {string} questionId
+ * @param {boolean} isCorrect
  */
 export async function updateQuestionHistory(questionId, isCorrect) {
     if (!state.currentUser) return;
     const historyRef = doc(db, 'users', state.currentUser.uid, 'questionHistory', questionId);
     const fieldToUpdate = isCorrect ? 'correct' : 'incorrect';
-    
+
     try {
         await setDoc(historyRef, {
             [fieldToUpdate]: increment(1),
@@ -323,8 +310,8 @@ export async function createOrUpdateName(type, name, id = null, parentId = null)
         // --- Lógica de Criação (Novo Item) ---
         if (type === 'folder') {
             // ===== INÍCIO DA MODIFICAÇÃO: Adiciona parentId ao criar pasta =====
-            const folderData = { 
-                name: name, 
+            const folderData = {
+                name: name,
                 createdAt: serverTimestamp(),
                 parentId: parentId || null // Define parentId (null para pastas raiz)
             };
@@ -338,14 +325,14 @@ export async function createOrUpdateName(type, name, id = null, parentId = null)
 
 export async function saveSessionStats() {
     if (!state.currentUser || state.sessionStats.length === 0) return;
-    
+
     // --- MODIFICAÇÃO: A função agora lê o state.sessionStats mas NÃO o limpa. ---
-    
+
     const total = state.sessionStats.length;
     const correct = state.sessionStats.filter(s => s.isCorrect).length;
     const incorrect = total - correct;
-    const accuracy = total > 0 ? (correct / total * 100) : 0; 
-    
+    const accuracy = total > 0 ? (correct / total * 100) : 0;
+
     const statsByMateria = state.sessionStats.reduce((acc, stat) => {
         if (!acc[stat.materia]) acc[stat.materia] = { correct: 0, total: 0 };
         acc[stat.materia].total++;
@@ -381,7 +368,7 @@ export async function getWeeklySolvedQuestionsData() {
     try {
         const sessionsCollection = collection(db, 'users', state.currentUser.uid, 'sessions');
         const q = query(sessionsCollection, where("createdAt", ">=", sevenDaysAgo));
-        
+
         const querySnapshot = await getDocs(q);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -394,8 +381,8 @@ export async function getWeeklySolvedQuestionsData() {
             sessionDate.setHours(0, 0, 0, 0);
 
             const timeDiff = today.getTime() - sessionDate.getTime();
-            const dayDiff = Math.floor(timeDiff / (1000 * 3600 * 24)); 
-            
+            const dayDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+
             const index = 6 - dayDiff;
 
             if (index >= 0 && index < 7) {
@@ -405,7 +392,7 @@ export async function getWeeklySolvedQuestionsData() {
     } catch (error) {
         console.error("Erro ao buscar dados de atividades da semana:", error);
     }
-    
+
     return weeklyCounts;
 }
 
@@ -433,7 +420,7 @@ export async function getHistoricalCountsForQuestions(questionIds) {
             totalIncorrect += incorrect;
         }
     });
-    
+
     return { correct: totalCorrect, incorrect: totalIncorrect, resolved: questionsWithHistory };
 }
 
@@ -448,12 +435,12 @@ export async function fetchPerformanceLog(startDate, endDate) {
     if (!state.currentUser || !startDate || !endDate) return [];
 
     const logCollection = collection(db, 'users', state.currentUser.uid, 'performanceLog');
-    
+
     // Converte as datas para Timestamps do Firestore para a consulta
     const startTimestamp = Timestamp.fromDate(startDate);
     const endTimestamp = Timestamp.fromDate(endDate);
 
-    const q = query(logCollection, 
+    const q = query(logCollection,
         where("createdAt", ">=", startTimestamp),
         where("createdAt", "<=", endTimestamp)
     );
@@ -504,7 +491,7 @@ export async function deleteItem(type, id) {
             const cadernoRef = doc(db, 'users', state.currentUser.uid, 'cadernos', caderno.id);
             batch.delete(cadernoRef);
         });
-        
+
         // ===== INÍCIO DA MODIFICAÇÃO: Excluir subpastas recursivamente =====
         // Precisamos encontrar todas as subpastas desta pasta e excluí-las também
         const allFolders = state.userFolders;
@@ -521,7 +508,7 @@ export async function deleteItem(type, id) {
                 }
             });
         }
-        
+
         // Exclui todos os cadernos dentro de todas as pastas a serem excluídas
         const allCadernosToDelete = state.userCadernos.filter(c => foldersToDeleteIds.has(c.folderId));
         allCadernosToDelete.forEach(caderno => {
@@ -570,10 +557,10 @@ async function deleteUserCollection(userId, collectionName) {
 
     const collectionRef = collection(db, 'users', userId, collectionName);
     const q = query(collectionRef); // Sem limit, pega tudo
-    
+
     try {
         const snapshot = await getDocs(q);
-        
+
         if (snapshot.empty) {
             console.log(`Coleção ${collectionName} já está vazia.`);
             return; // Sucesso, nada a fazer
@@ -625,7 +612,7 @@ export async function resetAllUserData() {
     // ===== FIM DA MODIFICAÇÃO =====
 
     // Cria um array de promessas para deletar todas as coleções em paralelo
-    const deletePromises = collectionsToDelete.map(collectionName => 
+    const deletePromises = collectionsToDelete.map(collectionName =>
         deleteUserCollection(userId, collectionName)
     );
 
