@@ -2,109 +2,158 @@ import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-fi
 import { state, setState, getActiveContainer } from '../state.js';
 import DOM from '../dom-elements.js';
 import { navigateToView } from '../ui/navigation.js';
-// --- CORREÇÃO: Importar a função displayQuestion ---
 import { renderAnsweredQuestion, displayQuestion } from './question-viewer.js';
 import { updateStatsPanel, updateStatsPageUI } from './stats.js';
-// ===== INÍCIO DA MODIFICAÇÃO =====
 import { setSrsReviewItem, saveUserAnswer, updateQuestionHistory, logPerformanceEntry } from '../services/firestore.js';
-// ===== FIM DA MODIFICAÇÃO =====
 
-// --- IMPLEMENTAÇÃO DO ALGORITMO SM-2 (AJUSTADO) ---
+// ===== IMPLEMENTAÇÃO DO ALGORITMO FSRS v4 (Anki Moderno) =====
 
-const MIN_EASE_FACTOR = 1.3;
-const INITIAL_EASE_FACTOR = 2.5;
+// Parâmetros padrão do FSRS v4 (Pesos otimizados padrão)
+const FSRS_PARAMS = {
+    request_retention: 0.9, // Retenção desejada (90%)
+    maximum_interval: 36500, // Máximo de 100 anos
+    w: [
+        0.4, 0.6, 2.4, 5.8, // initial stability for grades 1-4 (Again, Hard, Good, Easy)
+        4.93, 0.94, 0.86, 0.01, // difficulty/stability dynamics
+        1.49, 0.14, 0.94, // retention/stability dynamics
+        2.18, 0.05, 0.34, 1.26, // stability update on failure
+        0.29, 2.61 // stability update on success
+    ]
+};
 
 /**
- * Ordena strings alfanumericamente (ex: "2.10" vem depois de "2.9").
- * @param {string} a
- * @param {string} b
- * @returns {number}
+ * Aplica "Fuzz" (pequena variação aleatória) para evitar aglomerar revisões no mesmo dia.
+ * Igual ao Anki.
+ */
+function applyFuzz(interval) {
+    if (interval < 3) return interval;
+    const fuzzFactor = 0.05; // 5% de variação
+    const minIv = Math.max(2, Math.round(interval * (1 - fuzzFactor)));
+    const maxIv = Math.round(interval * (1 + fuzzFactor));
+    return Math.floor(Math.random() * (maxIv - minIv + 1)) + minIv;
+}
+
+/**
+ * Calcula os novos parâmetros usando FSRS.
+ * @param {object} reviewItem - Item atual (pode ter dados SM-2 antigos ou FSRS).
+ * @param {number} grade - Nota: 1 (Errei), 2 (Difícil), 3 (Bom), 4 (Fácil). NOTA: Convertido do app (0-3) para FSRS (1-4).
+ */
+function calculateFsrs(reviewItem, grade) {
+    let { 
+        stability, 
+        difficulty, 
+        lastReviewed, 
+        interval = 0, 
+        repetitions = 0 
+    } = reviewItem || {};
+
+    const now = Timestamp.now();
+    let elapsedDays = 0;
+
+    // --- 1. Migração / Inicialização ---
+    if (!stability || !difficulty) {
+        // Se não tem dados FSRS, tentamos converter do SM-2 ou iniciar do zero
+        if (interval > 0) {
+            // Conversão aproximada de SM-2 para FSRS
+            stability = interval;
+            difficulty = 11 - (reviewItem.easeFactor || 2.5) * 1.5; // Heurística aproximada
+            if (difficulty < 1) difficulty = 1;
+            if (difficulty > 10) difficulty = 10;
+        } else {
+            // Novo cartão
+            stability = 0;
+            difficulty = 0;
+        }
+    }
+
+    if (lastReviewed) {
+        const diffTime = Math.abs(now.toDate() - lastReviewed.toDate());
+        elapsedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    // --- 2. Lógica FSRS ---
+    
+    // Se é a primeira vez (stability 0)
+    if (stability === 0) {
+        // w[0]..w[3] são as estabilidades iniciais para as notas 1..4
+        stability = FSRS_PARAMS.w[grade - 1]; 
+        difficulty = FSRS_PARAMS.w[4] - (grade - 3) * FSRS_PARAMS.w[5]; // D0
+        
+        // Garante limites de D
+        difficulty = Math.max(1, Math.min(10, difficulty));
+        
+        repetitions = 1;
+    } else {
+        // Revisão subsequente
+        repetitions += 1;
+        
+        // Retrievability (Retenção Atual)
+        const retrievability = Math.pow(1 + 19/81 * elapsedDays / stability, -1);
+
+        // Atualiza Dificuldade (D)
+        const nextDifficulty = difficulty - FSRS_PARAMS.w[6] * (grade - 3);
+        const meanReversion = FSRS_PARAMS.w[7] * (FSRS_PARAMS.w[4] - difficulty); // Reverte para a média
+        difficulty = nextDifficulty + meanReversion;
+        difficulty = Math.max(1, Math.min(10, difficulty)); // Clamp D (1-10)
+
+        // Atualiza Estabilidade (S)
+        if (grade === 1) { // Errei (Again)
+            // Fórmula de esquecimento
+            stability = FSRS_PARAMS.w[11] * Math.pow(difficulty, -FSRS_PARAMS.w[12]) * (Math.pow(stability + 1, FSRS_PARAMS.w[13]) - 1) * Math.exp(FSRS_PARAMS.w[14] * (1 - retrievability));
+        } else { // Sucesso (Hard, Good, Easy)
+            // Fórmula de sucesso
+            const hardPenalty = (grade === 2) ? FSRS_PARAMS.w[15] : 1;
+            const easyBonus = (grade === 4) ? FSRS_PARAMS.w[16] : 1;
+            
+            stability = stability * (1 + Math.exp(FSRS_PARAMS.w[8]) * (11 - difficulty) * Math.pow(stability, -FSRS_PARAMS.w[9]) * (Math.exp(FSRS_PARAMS.w[10] * (1 - retrievability)) - 1) *
+                        hardPenalty * easyBonus);
+        }
+    }
+
+    // --- 3. Calcular Próximo Intervalo ---
+    // Intervalo = S * 9 * (1/R - 1) -> Para R=0.9 (90%), Intervalo = Stability
+    // Usando a fórmula geral: I = S * ( (1/R_request)^(1/decay) - 1 ) / factor?
+    // No FSRS padrão com request_retention 0.9, o próximo intervalo é aproximadamente igual à estabilidade.
+    
+    let nextInterval = Math.round(stability);
+    
+    // Se "Errei", o intervalo é forçado para curto (re-aprendizagem)
+    if (grade === 1) {
+        nextInterval = 1;
+        repetitions = 0; // Reseta contagem de repetições em streak (opcional, estilo Anki)
+    }
+
+    // Aplica limites e Fuzz
+    nextInterval = Math.max(1, Math.min(FSRS_PARAMS.maximum_interval, nextInterval));
+    if (nextInterval > 4) {
+        nextInterval = applyFuzz(nextInterval);
+    }
+
+    // Calcula data
+    const date = new Date();
+    date.setDate(date.getDate() + nextInterval);
+    const nextReviewDate = Timestamp.fromDate(date);
+
+    return { 
+        stability, 
+        difficulty, 
+        interval: nextInterval, 
+        repetitions, 
+        nextReviewDate,
+        easeFactor: 0 // Campo legado zerado para indicar uso do FSRS
+    };
+}
+
+
+/**
+ * Ordena strings alfanumericamente.
  */
 function naturalSort(a, b) {
     return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 }
 
 /**
- * Calcula os próximos parâmetros do SRS com base no algoritmo SM-2.
- * @param {object} reviewItem - O item de revisão atual da questão.
- * @param {number} quality - A qualidade da resposta (0: Errei, 1: Difícil, 2: Bom, 3: Fácil).
- * @returns {object} Novo item de revisão com { easeFactor, interval, repetitions, nextReviewDate }.
- */
-function calculateSm2(reviewItem, quality) {
-    let { easeFactor = INITIAL_EASE_FACTOR, interval = 0, repetitions = 0 } = reviewItem || {};
-
-    // 1. Lida com respostas incorretas (qualidade 0)
-    if (quality === 0) {
-        repetitions = 0; // Reseta o progresso
-        interval = 1;    // Agenda para o próximo dia (Errei 1d)
-        easeFactor = Math.max(MIN_EASE_FACTOR, easeFactor - 0.20); // Penaliza o 'ease'
-    } else {
-        // 2. Lida com respostas corretas (qualidade 1, 2, 3)
-        repetitions += 1;
-
-        // --- INÍCIO DA CORREÇÃO (Lógica de Intervalo) ---
-        // A lógica foi ajustada para refletir os intervalos esperados na primeira revisão:
-        // Difícil (1) = 2 dias, Bom (2) = 3 dias, Fácil (3) = 4 dias.
-        // As revisões seguintes (rep 2+) seguem um padrão SM-2 modificado.
-
-        if (repetitions === 1) {
-            // Primeira revisão (Repetição 1)
-            if (quality === 1) { // 'Difícil'
-                interval = 2; // Agendado para 2 dias
-            } else if (quality === 2) { // 'Bom'
-                interval = 3; // Agendado para 3 dias
-            } else if (quality === 3) { // 'Fácil'
-                interval = 4; // Agendado para 4 dias
-            } else {
-                interval = 1; // Fallback
-            }
-        } else if (repetitions === 2) {
-            // Segunda revisão (Repetição 2)
-            // Usamos um intervalo fixo padrão do SM-2
-            interval = 6; 
-        } else {
-            // Terceira revisão e subsequentes (Repetição 3+)
-            // Usa o easeFactor para calcular o próximo intervalo
-            interval = Math.ceil(interval * easeFactor);
-
-            // Aplicamos modificadores de bônus/penalidade
-            if (quality === 1) { // 'Difícil'
-                // Penaliza levemente o intervalo se achar difícil (mas não reseta)
-                interval = Math.ceil(interval * 0.9);
-            } else if (quality === 3) { // 'Fácil'
-                // Aplica um bônus de 30% sobre o intervalo recém-calculado.
-                interval = Math.ceil(interval * 1.3);
-            }
-            // 'Bom' (quality 2) não modifica o intervalo, usa o easeFactor puro.
-        }
-        // --- FIM DA CORREÇÃO ---
-    }
-
-    // 3. Atualiza o Fator de Facilidade (apenas para respostas corretas)
-    if (quality > 0) {
-        if (quality === 1) { // 'Difícil'
-            easeFactor = Math.max(MIN_EASE_FACTOR, easeFactor - 0.15);
-        } else if (quality === 3) { // 'Fácil'
-            easeFactor += 0.15;
-        }
-        // 'Bom' (quality 2) não altera o easeFactor
-    }
-    
-    // Garante que o intervalo mínimo seja 1.
-    interval = Math.max(1, interval);
-
-    const date = new Date();
-    date.setDate(date.getDate() + interval);
-    const nextReviewDate = Timestamp.fromDate(date);
-
-    return { easeFactor, interval, repetitions, nextReviewDate };
-}
-
-
-/**
- * Formata um intervalo em dias para uma string legível (ex: "3d", "2m", "1a").
- * @param {number} intervalInDays - O intervalo em dias.
- * @returns {string} O intervalo formatado.
+ * Formata um intervalo em dias para uma string legível.
  */
 export function formatInterval(intervalInDays) {
     if (intervalInDays < 1) return "<1d";
@@ -115,18 +164,20 @@ export function formatInterval(intervalInDays) {
 
 
 export async function handleSrsFeedback(feedback) {
-    setState('isUpdatingAnswer', true); // BUG FIX: Set flag to prevent snapshot re-render
+    setState('isUpdatingAnswer', true); 
 
     const question = state.filteredQuestions[state.currentQuestionIndex];
     const isCorrect = state.selectedAnswer === question.correctAnswer;
     
-    // Mapeia o feedback do botão para a qualidade numérica
-    const qualityMap = { 'again': 0, 'hard': 1, 'good': 2, 'easy': 3 };
-    let quality = qualityMap[feedback];
-    
-    // Se a resposta estiver incorreta, a qualidade é sempre 0 (Errei), não importa o botão clicado
+    // Mapeamento: App (0-3) -> FSRS (1-4)
+    // App: 0=Again(Errei), 1=Hard, 2=Good, 3=Easy
+    // FSRS: 1=Again, 2=Hard, 3=Good, 4=Easy
+    const feedbackToGrade = { 'again': 1, 'hard': 2, 'good': 3, 'easy': 4 };
+    let grade = feedbackToGrade[feedback];
+
+    // Se a resposta estiver incorreta, forçamos 'Again' (1)
     if (!isCorrect) {
-        quality = 0;
+        grade = 1;
     }
 
     if (!state.sessionStats.some(s => s.questionId === question.id)) {
@@ -138,7 +189,9 @@ export async function handleSrsFeedback(feedback) {
 
     if (state.currentUser) {
         const currentReviewItem = state.userReviewItemsMap.get(question.id);
-        const newReviewData = calculateSm2(currentReviewItem, quality);
+        
+        // CALCULA O NOVO ESTADO USANDO FSRS
+        const newReviewData = calculateFsrs(currentReviewItem, grade);
         
         const reviewDataToSave = { 
             ...newReviewData,
@@ -151,21 +204,15 @@ export async function handleSrsFeedback(feedback) {
 
         await saveUserAnswer(question.id, state.selectedAnswer, isCorrect);
         
-        // ===== INÍCIO DA MODIFICAÇÃO =====
-        // Atualiza tanto o histórico vitalício QUANTO o log diário
         await updateQuestionHistory(question.id, isCorrect);
         await logPerformanceEntry(question, isCorrect);
-        // ===== FIM DA MODIFICAÇÃO =====
     }
 
     renderAnsweredQuestion(isCorrect, state.selectedAnswer, false);
-    // updateStatsPanel(); // Painel de estatísticas da aba foi removido.
     updateStatsPageUI();
-    
-    // **CORREÇÃO:** Força a atualização da estrutura de dados da tela de revisão em tempo real.
     renderReviewView();
 
-    setState('isUpdatingAnswer', false); // BUG FIX: Unset flag after updates
+    setState('isUpdatingAnswer', false); 
 }
 
 
@@ -180,10 +227,9 @@ export function renderReviewView() {
         return;
     }
 
-    // --- MODIFICAÇÃO: Popula questionIdToDetails com 4 níveis ---
     const questionIdToDetails = new Map();
     state.allQuestions.forEach(q => {
-        if (q.materia && q.assunto) { // Apenas questões válidas
+        if (q.materia && q.assunto) { 
             questionIdToDetails.set(q.id, {
                 materia: q.materia,
                 assunto: q.assunto,
@@ -192,40 +238,38 @@ export function renderReviewView() {
             });
         }
     });
-    // --- FIM DA MODIFICAÇÃO ---
 
-
-    // --- MODIFICAÇÃO: Construção da hierarquia de 4 níveis ---
     const hierarchy = new Map();
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    now.setHours(23, 59, 59, 999); // Fim do dia para incluir tudo de hoje
 
     // Helper para criar um nó de estatísticas
     const createStatsNode = () => ({
         total: 0, errei: 0, dificil: 0, bom: 0, facil: 0, aRevisar: 0,
         questionIdsARevisar: [],
-        children: new Map() // Usar Map para sub-níveis
+        children: new Map() 
     });
 
-    // Helper para incrementar as estatísticas de um nó
+    // Helper para incrementar estatísticas (Adaptado para FSRS)
     const incrementStats = (node, item) => {
         node.total++;
-        const { repetitions = 0, easeFactor = INITIAL_EASE_FACTOR } = item;
-        
-        if (repetitions === 0) {
-            node.errei++;
-        } else if (easeFactor < 2.4) {
-            node.dificil++;
-        } else if (easeFactor < 2.6) {
-            node.bom++;
-        } else {
-            node.facil++;
-        }
+        // No FSRS, usamos a Estabilidade (stability) ou Intervalo para categorizar visualmente
+        const stability = item.stability || item.interval || 0;
+        const repetitions = item.repetitions || 0;
+
+        // Categorização visual baseada na maturidade do cartão
+        if (repetitions === 0) node.errei++; // Novos/Reaprendendo
+        else if (stability < 3) node.dificil++; // Baixa estabilidade
+        else if (stability < 21) node.bom++; // Média estabilidade
+        else node.facil++; // Alta estabilidade
 
         if (item.nextReviewDate) {
             const reviewDate = item.nextReviewDate.toDate();
-            reviewDate.setHours(0, 0, 0, 0);
-            if (reviewDate <= now) {
+            // Compara datas sem hora
+            const reviewDateOnly = new Date(reviewDate.setHours(0,0,0,0));
+            const todayOnly = new Date(new Date().setHours(0,0,0,0));
+            
+            if (reviewDateOnly <= todayOnly) {
                 node.aRevisar++;
                 node.questionIdsARevisar.push(item.questionId);
             }
@@ -234,51 +278,37 @@ export function renderReviewView() {
 
     state.userReviewItemsMap.forEach(item => {
         const details = questionIdToDetails.get(item.questionId);
-        if (!details) return; // Pula se a questão não for encontrada
+        if (!details) return; 
 
         const { materia, assunto, subAssunto, subSubAssunto } = details;
 
         // Nível 1: Matéria
-        if (!hierarchy.has(materia)) {
-            hierarchy.set(materia, createStatsNode());
-        }
+        if (!hierarchy.has(materia)) hierarchy.set(materia, createStatsNode());
         const materiaNode = hierarchy.get(materia);
         incrementStats(materiaNode, item);
 
         // Nível 2: Assunto
-        if (!materiaNode.children.has(assunto)) {
-            materiaNode.children.set(assunto, createStatsNode());
-        }
+        if (!materiaNode.children.has(assunto)) materiaNode.children.set(assunto, createStatsNode());
         const assuntoNode = materiaNode.children.get(assunto);
         incrementStats(assuntoNode, item);
 
-        // Nível 3: SubAssunto (só adiciona se existir)
+        // Nível 3: SubAssunto 
         if (subAssunto) {
-            if (!assuntoNode.children.has(subAssunto)) {
-                assuntoNode.children.set(subAssunto, createStatsNode());
-            }
+            if (!assuntoNode.children.has(subAssunto)) assuntoNode.children.set(subAssunto, createStatsNode());
             const subAssuntoNode = assuntoNode.children.get(subAssunto);
             incrementStats(subAssuntoNode, item);
 
-            // Nível 4: SubSubAssunto (só adiciona se existir)
+            // Nível 4: SubSubAssunto 
             if (subSubAssunto) {
-                // --- CORREÇÃO ---
-                // O erro estava aqui. Deveria checar/criar no `subAssuntoNode.children`
-                if (!subAssuntoNode.children.has(subSubAssunto)) {
-                    subAssuntoNode.children.set(subSubAssunto, createStatsNode());
-                }
-                // E aqui, deveria pegar o nó recém-criado/existente a partir do `subAssuntoNode`
+                if (!subAssuntoNode.children.has(subSubAssunto)) subAssuntoNode.children.set(subSubAssunto, createStatsNode());
                 const subSubAssuntoNode = subAssuntoNode.children.get(subSubAssunto);
-                // --- FIM DA CORREÇÃO ---
                 incrementStats(subSubAssuntoNode, item);
             }
         }
     });
     
-    setState('reviewStatsByMateria', hierarchy); // Salva a nova hierarquia
-    // --- FIM DA MODIFICAÇÃO ---
+    setState('reviewStatsByMateria', hierarchy); 
 
-    
     if (hierarchy.size === 0) {
         DOM.reviewTableContainer.innerHTML = `<p class="text-center text-gray-500 p-8">Nenhuma matéria com questões para revisar.</p>`;
         return;
@@ -288,7 +318,6 @@ export function renderReviewView() {
         <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50">
                 <tr>
-                    <!-- MODIFICAÇÃO: Adicionado div.pl-4 para alinhar checkbox -->
                     <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         <div class="pl-4">
                             <input type="checkbox" id="select-all-review-materias" class="rounded">
@@ -296,17 +325,17 @@ export function renderReviewView() {
                     </th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-black-500 tracking-wider">Matérias e Assuntos</th>
                     <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider">Total</th>
-                    <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider" title="Questões marcadas como 'Errei'">Errei</th>
-                    <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider" title="Questões marcadas como 'Difícil'">Difícil</th>
-                    <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider" title="Questões marcadas como 'Bom'">Bom</th>
-                    <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider" title="Questões marcadas como 'Fácil'">Fácil</th>
+                    <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider" title="Novos / Aprendendo">Novos</th>
+                    <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider" title="Curto Prazo">Curto</th>
+                    <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider" title="Médio Prazo">Médio</th>
+                    <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider" title="Longo Prazo">Longo</th>
                     <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider">A revisar</th>
                     <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-black-500 tracking-wider">Concluído</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">`;
 
-    // --- MODIFICAÇÃO: Função recursiva para renderizar linhas ---
+    // Função recursiva para renderizar linhas
     const renderRow = (node, name, level, parentId = '', pathData = {}) => {
         const { total, errei, dificil, bom, facil, aRevisar } = node;
         const isDisabled = aRevisar === 0;
@@ -315,22 +344,19 @@ export function renderReviewView() {
         const hasChildren = node.children.size > 0;
         const isHidden = level > 1 ? 'hidden' : '';
         const rowTypeClass = ['materia-row', 'assunto-row', 'subassunto-row', 'subsubassunto-row'][level - 1];
-        const indentClass = `pl-${(level - 1) * 4}`; // pl-0, pl-4, pl-8, pl-12
+        const indentClass = `pl-${(level - 1) * 4}`; 
         const rowId = parentId ? `${parentId}__${name.replace(/[^a-zA-Z0-9]/g, '-')}` : `row__${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
         
-        // Passa os dados do caminho (materia, assunto, etc.) para o checkbox
         const dataAttributes = Object.entries(pathData).map(([key, value]) => `data-${key}="${value}"`).join(' ');
 
         let html = `
             <tr class="${rowTypeClass} ${isHidden} ${isDisabled ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'}" data-id="${rowId}" data-parent-id="${parentId}" data-level="${level}">
                 <td class="px-4 py-4 whitespace-nowrap">
-                    <!-- Checkbox alinhado (pl-4) e com data attributes -->
                     <div class="flex items-center pl-4">
                         <input type="checkbox" class="review-checkbox rounded" ${dataAttributes} ${isDisabled ? 'disabled' : ''} data-level="${level}">
                     </div>
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap font-medium ${isDisabled ? '' : 'text-gray-900'}">
-                    <!-- Nome com indentação (baseada no nível) -->
                     <div class="flex items-center ${indentClass}">
                         ${hasChildren
                             ? `<i class="fas fa-chevron-right toggle-review-row transition-transform duration-200 mr-2 text-gray-400 cursor-pointer"></i>`
@@ -358,8 +384,6 @@ export function renderReviewView() {
             const sortedChildren = Array.from(node.children.keys()).sort(naturalSort);
             for (const childName of sortedChildren) {
                 const childNode = node.children.get(childName);
-                
-                // Constrói o path de dados para o filho
                 let childPathData = { ...pathData };
                 if (level === 1) childPathData.assunto = childName;
                 else if (level === 2) childPathData.subassunto = childName;
@@ -370,7 +394,6 @@ export function renderReviewView() {
         }
         return html;
     };
-    // --- FIM DA FUNÇÃO RECURSIVA ---
 
     const sortedMaterias = Array.from(hierarchy.keys()).sort(naturalSort);
     sortedMaterias.forEach(materiaName => {
@@ -386,19 +409,17 @@ export function renderReviewView() {
 export async function handleStartReview() {
     if (!state.currentUser) return;
     
-    // --- MODIFICAÇÃO: Seleciona pela classe genérica e busca nós na hierarquia ---
     const selectedCheckboxes = DOM.reviewTableContainer.querySelectorAll('.review-checkbox:checked');
     if (selectedCheckboxes.length === 0) return;
 
     const questionsToReviewIds = new Set();
-    const hierarchy = state.reviewStatsByMateria; // Pega a hierarquia salva no estado
+    const hierarchy = state.reviewStatsByMateria; 
 
     selectedCheckboxes.forEach(cb => {
         const { materia, assunto, subassunto, subsubassunto } = cb.dataset;
 
         let node;
         try {
-            // Navega na hierarquia (Map) para encontrar o nó selecionado
             node = hierarchy.get(materia);
             if (assunto) node = node.children.get(assunto);
             if (subassunto) node = node.children.get(subassunto);
@@ -408,14 +429,7 @@ export async function handleStartReview() {
             node = null;
         }
 
-        // Adiciona os IDs de revisão do nó (e de todos os seus filhos, implicitamente)
-        // A lógica de seleção de checkbox (em event-listeners) garante que se um pai é checado, os filhos também são.
-        // Aqui só precisamos coletar os IDs do nó específico.
-        // CORREÇÃO: A lógica de seleção (em event-listeners) *não* checa os filhos.
-        // A *coleta* aqui deve ser recursiva.
-
         if (node) {
-            // Função recursiva para coletar IDs
             const collectIds = (currentNode) => {
                 if (currentNode.questionIdsARevisar) {
                     currentNode.questionIdsARevisar.forEach(id => questionsToReviewIds.add(id));
@@ -427,7 +441,6 @@ export async function handleStartReview() {
             collectIds(node);
         }
     });
-    // --- FIM DA MODIFICAÇÃO ---
 
     const uniqueQuestionIds = Array.from(questionsToReviewIds);
 
@@ -437,21 +450,10 @@ export async function handleStartReview() {
         setState('sessionStats', []);
         setState('currentQuestionIndex', 0);
 
-        // ===== INÍCIO DA MODIFICAÇÃO (SOLICITAÇÃO DO USUÁRIO) =====
-        // await navigateToView('vade-mecum-view', false); // REMOVIDO
-        
-        // Em vez de navegar, apenas oculta a tabela e mostra o container de questões
         if(DOM.reviewTableContainer) DOM.reviewTableContainer.classList.add('hidden');
         if(DOM.startSelectedReviewBtn) DOM.startSelectedReviewBtn.classList.add('hidden');
         if(DOM.reviewQuestionContainer) DOM.reviewQuestionContainer.classList.remove('hidden');
         
-        // DOM.vadeMecumTitle.textContent = "Sessão de Revisão"; // REMOVIDO
-        // DOM.toggleFiltersBtn.classList.add('hidden'); // REMOVIDO
-        // DOM.filterCard.classList.add('hidden'); // REMOVIDO
-        // DOM.selectedFiltersContainer.innerHTML = `<span class="text-gray-500">Revisando ${uniqueQuestionIds.length} questões.</span>`; // REMOVIDO
-
         await displayQuestion();
-        // updateStatsPanel(); // Painel de estatísticas da aba foi removido.
-        // ===== FIM DA MODIFICAÇÃO =====
     }
 }
